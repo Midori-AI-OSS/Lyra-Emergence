@@ -20,6 +20,8 @@ For contributors actively writing, refactoring, or reviewing code. Coder Mode em
 - Update documentation in `.codex/implementation/` and `.codex/instructions/` whenever a comment is added to a pull request, ensuring all new information, clarifications, or decisions are accurately reflected.
 - Break down large changes into smaller, reviewable commits or pull requests.
 - Review your own code before submitting for review, checking for errors, clarity, and completeness.
+- Place source files under `src/` and tests under `src/tests/`, keeping the repository root free of other code aside from the `lyra.py` entry point.
+- Ensure all code is fully type safe, memory safe, and thoroughly commented.
 
 ## Typical Actions
 - Review the root `.codex/tasks/` folder for new or assigned tasks
