@@ -2,6 +2,9 @@
 	"folders": [
 		{
 			"path": "."
+		},
+		{
+			"path": "../../Lyra_project_root/CleanClone/Lyra-Emergence"
 		}
 	],
 	"settings": {
