@@ -17,8 +17,11 @@ Lyra Project is an experimental AGI agent framework designed for research and pr
    ```
 
 ## Project Structure
-- `lyra.py` — Main entry point for Lyra agent
+The repository keeps executable code out of the root directory. All implementations live under `src/`, with tests in `src/tests/`.
+
+- `lyra.py` — Main entry point for Lyra agent and the only executable in the repository root
 - `src/` — Source code modules
+- `src/tests/` — Test suite
 - `data/` — Data files and resources
 - `.codex/` — Contributor docs and instructions
 - `AGENTS.md` — Contributor guide and development practices
@@ -31,6 +34,7 @@ See `AGENTS.md` for full details. Highlights:
 - Commit with `[TYPE] Title` format
 - Review and update your contributor mode cheat sheet in `.codex/notes/`
 - Run tests before committing (pytest recommended)
+- Ensure all code is fully type safe, memory safe, and thoroughly commented
 
 ## Requirements
 - `uv`

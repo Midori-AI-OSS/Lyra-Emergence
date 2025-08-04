@@ -24,6 +24,8 @@ This document summarizes common development practices for all services in this r
   This is normal and does not replace the need for your own clear `[TYPE]` commit messages.
 - Run available tests (e.g., `pytest`) before committing.
 - Any test running longer than 25 seconds is automatically aborted.
+- Keep executable code out of the repository root. Place source files in `src/` and tests in `src/tests/`, with `lyra.py` serving as the root entry point.
+- Write code that is fully type safe, memory safe, and thoroughly commented.
 - For Python style:
    - Place each import on its own line.
    - Sort imports within each group (standard library, third-party, project modules) from shortest to longest.
