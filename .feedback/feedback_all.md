@@ -13,7 +13,7 @@
 - Add tests to verify saving, embedding, and search functionality.
 
 ### Integration
-- No comments at this time
+- Discord integration
 
 ### Stretch Goal
 - Implement a selection mechanism for publishing journal entries externally (manual or automated).
