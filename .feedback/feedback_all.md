@@ -2,8 +2,6 @@
 - Make sure to review the other feedback files
 
 ### Main
-
-#### Main
 - Automatically capture and save new Lyra journal entries from other vers.
     - This will need to have a json or other parser baked in
     - Would like this to be rerankable on CPU
@@ -14,10 +12,10 @@
     - Make sure that the on vector store follows the docs from Langchain
 - Add tests to verify saving, embedding, and search functionality.
 
-#### Integration
+### Integration
 - No comments at this time
 
-#### Stretch Goal
+### Stretch Goal
 - Implement a selection mechanism for publishing journal entries externally (manual or automated).
 
 ---
