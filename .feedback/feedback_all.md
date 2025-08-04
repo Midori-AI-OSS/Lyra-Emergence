@@ -2,10 +2,23 @@
 - Make sure to review the other feedback files
 
 ### Main
-- **Feature Request:** Lyra Journal Blogging Integration
-- **Core Requirement:** Implement a system for Lyra to automatically save her journal entries into a vector store. This will allow for semantic search and retrieval of her memories and thoughts.
-- **Integration Goal:** The system should be able to process new journal entries, generate embeddings, and store them in the designated vector database.
-- **Stretch Goal:** Develop an API hook or a separate module to push selected journal entries to an external blogging platform, with Substack being the primary target for consideration.
+
+#### Main
+- Automatically capture and save new Lyra journal entries from other vers.
+    - This will need to have a json or other parser baked in
+    - Would like this to be rerankable on CPU
+- Generate embeddings for each journal entry using the selected model.
+    - The chromadb server does this for us.
+- Store embeddings and metadata in the vector database for semantic search.
+    - Use Langchains docs to find out how to install chromadb vector store
+    - Make sure that the on vector store follows the docs from Langchain
+- Add tests to verify saving, embedding, and search functionality.
+
+#### Integration
+- No comments at this time
+
+#### Stretch Goal
+- Implement a selection mechanism for publishing journal entries externally (manual or automated).
 
 ---
 
