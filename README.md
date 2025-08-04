@@ -11,7 +11,7 @@ Lyra Project is an experimental AGI agent framework designed for research and pr
 
 ## Quickstart
 1. **Clone the repository**
-3. **Run the main agent**:
+2. **Run the main agent**:
    ```bash
    uv run lyra.py
    ```
