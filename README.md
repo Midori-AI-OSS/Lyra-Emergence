@@ -8,12 +8,29 @@ Lyra Project is an experimental AGI agent framework designed for research and pr
 - Uses FAISS for vector search and sentence-transformers for embeddings
 - Integrates with LangChain and HuggingFace tools
 - Rich console output for interactive development
+- Optional Discord bot interface for chatting remotely
+- CLI chat uses a LangChain `HuggingFacePipeline` by default for replies
 
 ## Quickstart
 1. **Clone the repository**
 2. **Run the main agent**:
    ```bash
    uv run lyra.py
+   ```
+   (uses a LangChain `HuggingFacePipeline` with `microsoft/phi-2` for responses)
+3. **Run the Discord bot** (requires `DISCORD_BOT_TOKEN`):
+   ```bash
+   uv run discord_bot.py
+   ```
+
+4. **Mark a journal entry for publication**:
+   ```bash
+   uv run lyra.py --mark <id>
+   ```
+
+5. **Export marked entries to Markdown**:
+   ```bash
+   uv run python -m src.publish.export
    ```
 
 ## Project Structure
@@ -33,7 +50,7 @@ See `AGENTS.md` for full details. Highlights:
 - Follow import and code style conventions
 - Commit with `[TYPE] Title` format
 - Review and update your contributor mode cheat sheet in `.codex/notes/`
-- Run tests before committing (pytest recommended)
+- Run tests before committing with `uv run pytest`
 - Ensure all code is fully type safe, memory safe, and thoroughly commented
 
 ## Requirements
