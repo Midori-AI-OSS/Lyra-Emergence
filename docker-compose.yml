@@ -1,0 +1,12 @@
+# Compose setup for Lyra with PixelArch
+# Start with: docker compose up -d --build
+# Stop with:  docker compose down
+
+services:
+  lyra:
+    build: .
+    container_name: lyra
+    command: uv run lyra.py
+    volumes:
+      - .:/app
+    working_dir: /app
