@@ -1,0 +1,17 @@
+{
+	"folders": [
+		{
+			"path": "."
+		},
+		{
+			"path": "../../Lyra_project_root/CleanClone/Lyra-Emergence"
+		}
+	],
+	"settings": {
+		"workbench.startupEditor": "none",
+		"workbench.editor.restoreViewState": true
+	},
+	"extensions": {
+		"recommendations": []
+	}
+}
