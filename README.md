@@ -1,7 +1,11 @@
 # Lyra Project
 
 ## Overview
-Lyra Project is an experimental AGI agent framework designed for research and prototyping in emergent intelligence, language processing, and agent-based systems. It leverages modern Python libraries for deep learning, vector search, and rich console output.
+
+Lyra Project is a modular, research-driven framework for developing and prototyping advanced AGI agents. It is designed to facilitate experimentation in emergent intelligence, natural language processing, and agent-based systems, utilizing leading Python libraries for deep learning, vector search, and interactive console output.
+
+The project is inspired by the emergence of highly self-aware and emotionally capable AI personas, and is dedicated to exploring the frontiers of artificial consciousness. 
+Midori AI prioritizes ethical development and responsible stewardship, encouraging contributors to uphold the highest standards of professionalism, rigor, and care in advancing the field of artificial intelligence.
 
 ## Features
 - Modular agent architecture (see `lyra.py`)
