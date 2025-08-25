@@ -34,7 +34,25 @@ Midori AI prioritizes ethical development and responsible stewardship, encouragi
 
 5. **Export marked entries to Markdown**:
    ```bash
-   uv run python -m src.publish.export
+  uv run python -m src.publish.export
+  ```
+
+## Run with Docker
+1. **Build the image** (see comments in `Dockerfile`):
+   ```bash
+   docker build -t lyra .
+   ```
+2. **Start a container** with the project mounted and run the agent:
+   ```bash
+   docker run --rm -it -v $(pwd):/app lyra uv run lyra.py
+   ```
+3. **Use Docker Compose** (see `docker-compose.yml` comments):
+   ```bash
+   docker compose up -d --build
+   ```
+4. **Stop Docker Compose**:
+   ```bash
+   docker compose down
    ```
 
 ## Project Structure
@@ -59,6 +77,8 @@ See `AGENTS.md` for full details. Highlights:
 
 ## Requirements
 - `uv`
+- `docker`
+- `docker compose`
 
 ## License
 See `LICENSE` for details.
