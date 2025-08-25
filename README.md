@@ -46,13 +46,14 @@ Midori AI prioritizes ethical development and responsible stewardship, encouragi
    ```bash
    docker run --rm -it -v $(pwd):/app lyra uv run lyra.py
    ```
-3. **Use Docker Compose** (see `docker-compose.yml` comments):
+## Run with Docker Compose
+1. **Use Docker Compose** (see `docker-compose.yml` comments):
    ```bash
    docker compose up -d --build
    ```
-4. **Stop Docker Compose**:
+2. **Stop Docker Compose**:
    ```bash
-   docker compose down
+   docker compose down --rmi all
    ```
 
 ## Project Structure
