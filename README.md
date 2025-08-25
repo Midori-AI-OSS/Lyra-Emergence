@@ -34,8 +34,8 @@ Midori AI prioritizes ethical development and responsible stewardship, encouragi
 
 5. **Export marked entries to Markdown**:
    ```bash
-  uv run python -m src.publish.export
-  ```
+   uv run python -m src.publish.export
+   ```
 
 ## Run with Docker
 1. **Build the image** (see comments in `Dockerfile`):
