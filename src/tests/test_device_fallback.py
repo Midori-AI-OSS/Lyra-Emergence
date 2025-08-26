@@ -1,21 +1,23 @@
 """Tests for VRAM OOM fallback functionality."""
 
+from unittest.mock import Mock, patch
+
 import pytest
 import torch
-from unittest.mock import Mock
-from unittest.mock import patch
 
-from src.utils.device_fallback import safe_load_model
-from src.utils.device_fallback import safe_load_embeddings
-from src.utils.device_fallback import safe_load_pipeline
-from src.utils.device_fallback import safe_load_pipeline_legacy
+from src.utils.device_fallback import (
+    safe_load_embeddings,
+    safe_load_model,
+    safe_load_pipeline,
+    safe_load_pipeline_legacy,
+)
 
 
 def test_safe_load_model_success() -> None:
     """Test that safe_load_model works normally when no OOM occurs."""
     mock_loader = Mock(return_value="model")
     result = safe_load_model(mock_loader, "arg1", kwarg1="value1")
-    
+
     assert result == "model"
     mock_loader.assert_called_once_with("arg1", kwarg1="value1")
 
@@ -26,11 +28,11 @@ def test_safe_load_model_cuda_oom_fallback() -> None:
     # First call raises CUDA OOM, second call succeeds
     mock_loader.side_effect = [
         torch.cuda.OutOfMemoryError("CUDA out of memory"),
-        "model_on_cpu"
+        "model_on_cpu",
     ]
-    
+
     result = safe_load_model(mock_loader, device="cuda")
-    
+
     assert result == "model_on_cpu"
     assert mock_loader.call_count == 2
     # First call with original args
@@ -44,11 +46,11 @@ def test_safe_load_model_runtime_error_oom_fallback() -> None:
     mock_loader = Mock()
     mock_loader.side_effect = [
         RuntimeError("CUDA out of memory. Tried to allocate..."),
-        "model_on_cpu"
+        "model_on_cpu",
     ]
-    
+
     result = safe_load_model(mock_loader, model_kwargs={"device": "cuda"})
-    
+
     assert result == "model_on_cpu"
     assert mock_loader.call_count == 2
     # Second call should have CPU device in model_kwargs
@@ -59,7 +61,7 @@ def test_safe_load_model_non_oom_error_reraises() -> None:
     """Test that non-OOM errors are re-raised."""
     mock_loader = Mock()
     mock_loader.side_effect = ValueError("Some other error")
-    
+
     with pytest.raises(ValueError, match="Some other error"):
         safe_load_model(mock_loader)
 
@@ -69,52 +71,52 @@ def test_safe_load_model_device_map_fallback() -> None:
     mock_loader = Mock()
     mock_loader.side_effect = [
         torch.cuda.OutOfMemoryError("CUDA out of memory"),
-        "model_on_cpu"
+        "model_on_cpu",
     ]
-    
+
     result = safe_load_model(mock_loader, device_map="auto")
-    
+
     assert result == "model_on_cpu"
     # Second call should have CPU device_map
     mock_loader.assert_any_call(device_map="cpu", model_kwargs={"device": "cpu"})
 
 
-@patch('src.utils.device_fallback.HuggingFaceEmbeddings')
+@patch("src.utils.device_fallback.HuggingFaceEmbeddings")
 def test_safe_load_embeddings(mock_hf_embeddings) -> None:
     """Test safe_load_embeddings wrapper."""
     mock_hf_embeddings.return_value = "embeddings"
-    
+
     result = safe_load_embeddings(model_name="test-model")
-    
+
     assert result == "embeddings"
     mock_hf_embeddings.assert_called_once_with(model_name="test-model")
 
 
-@patch('src.utils.device_fallback.HuggingFacePipeline')
+@patch("src.utils.device_fallback.HuggingFacePipeline")
 def test_safe_load_pipeline(mock_hf_pipeline) -> None:
     """Test safe_load_pipeline wrapper."""
     mock_hf_pipeline.from_model_id.return_value = "pipeline"
-    
+
     result = safe_load_pipeline_legacy("model-id", "text-generation", device="cuda")
-    
+
     assert result == "pipeline"
     mock_hf_pipeline.from_model_id.assert_called_once_with(
         "model-id", "text-generation", device="cuda"
     )
 
 
-@patch('src.utils.device_fallback.safe_load_model_with_config')
-@patch('src.utils.device_fallback.load_config')
+@patch("src.utils.device_fallback.safe_load_model_with_config")
+@patch("src.utils.device_fallback.load_config")
 def test_safe_load_pipeline_with_config(mock_load_config, mock_safe_load) -> None:
     """Test enhanced safe_load_pipeline with configuration."""
     from src.config.model_config import ModelConfig
-    
+
     mock_config = ModelConfig()
     mock_load_config.return_value = mock_config
     mock_safe_load.return_value = "pipeline"
-    
+
     result = safe_load_pipeline("test/model", "text-generation")
-    
+
     assert result == "pipeline"
     mock_load_config.assert_called_once_with(None)
     mock_safe_load.assert_called_once()

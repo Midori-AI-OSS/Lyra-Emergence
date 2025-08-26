@@ -1,5 +1,4 @@
-from flashrank import RerankRequest
-from flashrank import Ranker
+from flashrank import Ranker, RerankRequest
 
 from src.cli.chat import ChatSession
 from src.rerank.cpu_reranker import rerank_entries
@@ -14,7 +13,14 @@ class DummyRanker(Ranker):
         results = []
         for p in passages:
             score = 1.0 if "alpha" in p["text"] else 0.0
-            results.append({"id": p["id"], "text": p["text"], "score": score, "meta": p.get("meta", {})})
+            results.append(
+                {
+                    "id": p["id"],
+                    "text": p["text"],
+                    "score": score,
+                    "meta": p.get("meta", {}),
+                }
+            )
         results.sort(key=lambda r: r["score"], reverse=True)
         return results
 

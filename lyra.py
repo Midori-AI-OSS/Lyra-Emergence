@@ -1,15 +1,14 @@
 from argparse import ArgumentParser
 from pathlib import Path
 
-from rich.console import Console
-from langchain_huggingface import HuggingFacePipeline
 from langchain_core.language_models import BaseLanguageModel
+from rich.console import Console
 
 from src.cli.chat import ChatSession
-from src.publish.mark import toggle_publish_flag
-from src.vectorstore.chroma import ingest_journal
-from src.utils.device_fallback import safe_load_pipeline
 from src.config.model_config import load_config
+from src.publish.mark import toggle_publish_flag
+from src.utils.device_fallback import safe_load_pipeline
+from src.vectorstore.chroma import ingest_journal
 
 
 def main() -> None:
@@ -49,7 +48,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--auto-select",
-        action="store_true", 
+        action="store_true",
         help="Automatically select optimal model based on available system resources",
     )
     parser.add_argument(
@@ -71,6 +70,7 @@ def main() -> None:
     # Launch TUI if requested
     if args.tui:
         from src.cli.tui import run_tui
+
         run_tui()
         return
 
@@ -86,7 +86,9 @@ def main() -> None:
         config_path=args.model_config,
         pipeline_kwargs=config.to_pipeline_kwargs(),
     )
-    session = ChatSession(console=console, rerank=args.rerank, llm=llm, model_id=config.model_id)
+    session = ChatSession(
+        console=console, rerank=args.rerank, llm=llm, model_id=config.model_id
+    )
     session.run()
 
 

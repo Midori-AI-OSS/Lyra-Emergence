@@ -1,10 +1,9 @@
 """Discord bot interface for Lyra."""
 
-import os
 import asyncio
+import os
 
 import discord
-from langchain_huggingface import HuggingFacePipeline
 
 from src.cli.chat import ChatSession
 from src.utils.device_fallback import safe_load_pipeline

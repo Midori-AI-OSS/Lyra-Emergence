@@ -1,13 +1,11 @@
 import re
-from pathlib import Path
 from argparse import ArgumentParser
+from pathlib import Path
 
 from src.journal.parser import parse_journal
 
-
 SENSITIVE_PATTERNS = [
-    re.compile(pattern, re.IGNORECASE)
-    for pattern in ["password", "secret"]
+    re.compile(pattern, re.IGNORECASE) for pattern in ["password", "secret"]
 ]
 
 
@@ -39,9 +37,9 @@ def export_marked_entries(journal_path: Path, output_dir: Path) -> list[Path]:
         file_path = output_dir / f"{entry.id}.md"
         with file_path.open("w", encoding="utf-8") as fh:
             fh.write("---\n")
-            fh.write(f"id: \"{entry.id}\"\n")
+            fh.write(f'id: "{entry.id}"\n')
             if entry.summary:
-                fh.write(f"summary: \"{entry.summary}\"\n")
+                fh.write(f'summary: "{entry.summary}"\n')
             fh.write("---\n\n")
             if redacted:
                 fh.write("<!-- WARNING: Potential secrets were redacted -->\n\n")

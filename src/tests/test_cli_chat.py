@@ -1,5 +1,5 @@
-from rich.console import Console
 from langchain_community.llms.fake import FakeListLLM
+from rich.console import Console
 
 from src.cli.chat import ChatSession
 

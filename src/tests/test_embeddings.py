@@ -3,8 +3,7 @@
 import pytest
 from langchain_core.embeddings import FakeEmbeddings
 
-from src.vectorstore.chroma import get_client
-from src.vectorstore.chroma import ingest_journal
+from src.vectorstore.chroma import get_client, ingest_journal
 
 
 class FailingEmbeddings(FakeEmbeddings):
@@ -34,4 +33,3 @@ def test_embedding_failure_raises_error(journal_file, tmp_path) -> None:
             persist_directory=persist,
             embedding=FailingEmbeddings(),
         )
-
