@@ -9,6 +9,7 @@ from src.cli.chat import ChatSession
 from src.publish.mark import toggle_publish_flag
 from src.vectorstore.chroma import ingest_journal
 from src.utils.device_fallback import safe_load_pipeline
+from src.config.model_config import load_config
 
 
 def main() -> None:
@@ -46,6 +47,16 @@ def main() -> None:
         type=Path,
         help="Path to model configuration file for sharding and device mapping",
     )
+    parser.add_argument(
+        "--auto-select",
+        action="store_true", 
+        help="Automatically select optimal model based on available system resources",
+    )
+    parser.add_argument(
+        "--tui",
+        action="store_true",
+        help="Launch the Text User Interface (TUI) for interactive use",
+    )
     parser.set_defaults(rerank=True)
     args = parser.parse_args()
 
@@ -57,14 +68,23 @@ def main() -> None:
         toggle_publish_flag(args.journal, args.mark)
         return
 
+    # Launch TUI if requested
+    if args.tui:
+        from src.cli.tui import run_tui
+        run_tui()
+        return
+
     console = Console()
     console.print("Lyra Project startup initialized.")
 
+    # Load model configuration (with optional auto-selection)
+    config = load_config(config_path=args.model_config, auto_select=args.auto_select)
+
     llm: BaseLanguageModel = safe_load_pipeline(
-        model_id="microsoft/phi-2",
-        task="text-generation",
+        model_id=config.model_id,
+        task=config.task,
         config_path=args.model_config,
-        pipeline_kwargs={"max_new_tokens": 4000},
+        pipeline_kwargs=config.to_pipeline_kwargs(),
     )
     session = ChatSession(console=console, rerank=args.rerank, llm=llm)
     session.run()

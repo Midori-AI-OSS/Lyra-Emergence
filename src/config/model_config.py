@@ -6,6 +6,9 @@ from pathlib import Path
 from typing import Any, Dict, Optional
 from dataclasses import dataclass, asdict
 
+from src.utils.system_info import get_available_memory, get_memory_tier, detect_optimal_memory_config
+from src.config.model_recommendations import recommend_model, get_model_info
+
 logger = logging.getLogger(__name__)
 
 
@@ -70,11 +73,12 @@ class ModelConfig:
         return self.pipeline_kwargs or {}
 
 
-def load_config(config_path: Optional[Path] = None) -> ModelConfig:
+def load_config(config_path: Optional[Path] = None, auto_select: bool = False) -> ModelConfig:
     """Load model configuration from file or return default.
     
     Args:
         config_path: Path to configuration file. If None, looks for default locations.
+        auto_select: If True, automatically select optimal model based on system resources.
         
     Returns:
         ModelConfig instance with loaded or default configuration
@@ -92,19 +96,59 @@ def load_config(config_path: Optional[Path] = None) -> ModelConfig:
                 config_path = path
                 break
     
+    base_config = ModelConfig()
+    
+    # Load from file if available
     if config_path and config_path.exists():
         try:
             with open(config_path, 'r', encoding='utf-8') as f:
                 config_data = json.load(f)
             
             logger.info(f"Loaded model configuration from {config_path}")
-            return ModelConfig(**config_data)
+            base_config = ModelConfig(**config_data)
             
         except Exception as e:
             logger.warning(f"Failed to load config from {config_path}: {e}. Using defaults.")
     
-    logger.info("Using default model configuration")
-    return ModelConfig()
+    # Auto-select model if requested
+    if auto_select:
+        logger.info("Auto-selecting optimal model based on system resources...")
+        ram_gb, vram_gb = get_available_memory()
+        recommended = recommend_model(ram_gb, vram_gb)
+        
+        if recommended:
+            base_config.model_id = recommended.model_id
+            
+            # Set optimal memory configuration
+            optimal_memory = detect_optimal_memory_config(ram_gb, vram_gb)
+            base_config.max_memory = optimal_memory
+            
+            # Enable progressive fallback for better resource utilization
+            base_config.enable_progressive_fallback = True
+            
+            # Auto-configure quantization if needed
+            if vram_gb < recommended.recommended_vram_gb and "8bit" in recommended.quantization_support:
+                base_config.load_in_8bit = True
+                logger.info("Enabled 8-bit quantization due to limited VRAM")
+            elif vram_gb < recommended.min_vram_gb and "4bit" in recommended.quantization_support:
+                base_config.load_in_4bit = True
+                logger.info("Enabled 4-bit quantization due to very limited VRAM")
+            
+            # Set device map based on available resources
+            if vram_gb > 1.0:
+                base_config.device_map = "auto"
+            else:
+                base_config.device_map = "cpu"
+                logger.info("Using CPU-only mode due to insufficient VRAM")
+            
+            logger.info(f"Auto-selected model: {recommended.model_id} ({recommended.parameter_count})")
+        else:
+            logger.warning("Could not auto-select model, using default configuration")
+    
+    if base_config.device_map is None:
+        logger.info("Using default model configuration")
+    
+    return base_config
 
 
 def save_config(config: ModelConfig, config_path: Path) -> None:
