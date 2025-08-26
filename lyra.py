@@ -41,6 +41,11 @@ def main() -> None:
         action="store_false",
         help="Disable CPU-based reranking",
     )
+    parser.add_argument(
+        "--model-config",
+        type=Path,
+        help="Path to model configuration file for sharding and device mapping",
+    )
     parser.set_defaults(rerank=True)
     args = parser.parse_args()
 
@@ -58,6 +63,7 @@ def main() -> None:
     llm: BaseLanguageModel = safe_load_pipeline(
         model_id="microsoft/phi-2",
         task="text-generation",
+        config_path=args.model_config,
         pipeline_kwargs={"max_new_tokens": 4000},
     )
     session = ChatSession(console=console, rerank=args.rerank, llm=llm)

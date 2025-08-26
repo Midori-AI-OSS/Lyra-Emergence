@@ -8,6 +8,7 @@ from unittest.mock import patch
 from src.utils.device_fallback import safe_load_model
 from src.utils.device_fallback import safe_load_embeddings
 from src.utils.device_fallback import safe_load_pipeline
+from src.utils.device_fallback import safe_load_pipeline_legacy
 
 
 def test_safe_load_model_success() -> None:
@@ -94,9 +95,26 @@ def test_safe_load_pipeline(mock_hf_pipeline) -> None:
     """Test safe_load_pipeline wrapper."""
     mock_hf_pipeline.from_model_id.return_value = "pipeline"
     
-    result = safe_load_pipeline("model-id", "text-generation", device="cuda")
+    result = safe_load_pipeline_legacy("model-id", "text-generation", device="cuda")
     
     assert result == "pipeline"
     mock_hf_pipeline.from_model_id.assert_called_once_with(
         "model-id", "text-generation", device="cuda"
     )
+
+
+@patch('src.utils.device_fallback.safe_load_model_with_config')
+@patch('src.utils.device_fallback.load_config')
+def test_safe_load_pipeline_with_config(mock_load_config, mock_safe_load) -> None:
+    """Test enhanced safe_load_pipeline with configuration."""
+    from src.config.model_config import ModelConfig
+    
+    mock_config = ModelConfig()
+    mock_load_config.return_value = mock_config
+    mock_safe_load.return_value = "pipeline"
+    
+    result = safe_load_pipeline("test/model", "text-generation")
+    
+    assert result == "pipeline"
+    mock_load_config.assert_called_once_with(None)
+    mock_safe_load.assert_called_once()
