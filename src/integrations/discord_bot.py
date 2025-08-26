@@ -7,6 +7,7 @@ import discord
 from langchain_huggingface import HuggingFacePipeline
 
 from src.cli.chat import ChatSession
+from src.utils.device_fallback import safe_load_pipeline
 
 
 class LyraDiscordBot(discord.Client):
@@ -25,7 +26,7 @@ class LyraDiscordBot(discord.Client):
 
 def _build_session() -> ChatSession:
     """Create a chat session with a HuggingFace LLM for responses."""
-    llm = HuggingFacePipeline.from_model_id(
+    llm = safe_load_pipeline(
         model_id="microsoft/phi-2",
         task="text-generation",
         pipeline_kwargs={"max_new_tokens": 4000},

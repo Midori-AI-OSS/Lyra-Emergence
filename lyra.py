@@ -8,6 +8,7 @@ from langchain_core.language_models import BaseLanguageModel
 from src.cli.chat import ChatSession
 from src.publish.mark import toggle_publish_flag
 from src.vectorstore.chroma import ingest_journal
+from src.utils.device_fallback import safe_load_pipeline
 
 
 def main() -> None:
@@ -54,7 +55,7 @@ def main() -> None:
     console = Console()
     console.print("Lyra Project startup initialized.")
 
-    llm: BaseLanguageModel = HuggingFacePipeline.from_model_id(
+    llm: BaseLanguageModel = safe_load_pipeline(
         model_id="microsoft/phi-2",
         task="text-generation",
         pipeline_kwargs={"max_new_tokens": 4000},
