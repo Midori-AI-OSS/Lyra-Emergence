@@ -20,7 +20,7 @@ class TestModelConfig:
     def test_default_config(self) -> None:
         """Test that default configuration is created correctly."""
         config = ModelConfig()
-        assert config.model_id == "microsoft/phi-2"
+        assert config.model_id == "Qwen/Qwen2.5-7B-Instruct"
         assert config.task == "text-generation"
         assert config.device_map is None
         assert config.enable_progressive_fallback is True
@@ -67,7 +67,7 @@ class TestConfigLoading:
             with patch('src.config.model_config.Path') as mock_path:
                 mock_path.return_value.exists.return_value = False
                 config = load_config()
-                assert config.model_id == "microsoft/phi-2"
+                assert config.model_id == "Qwen/Qwen2.5-7B-Instruct"
                 
     def test_load_config_from_file(self) -> None:
         """Test loading config from JSON file."""

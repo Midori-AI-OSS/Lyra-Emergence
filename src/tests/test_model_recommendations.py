@@ -65,9 +65,9 @@ class TestModelRecommendations:
     
     def test_get_model_info_exists(self):
         """Test retrieving info for existing model."""
-        model_info = get_model_info("microsoft/phi-2")
+        model_info = get_model_info("Qwen/Qwen2.5-7B-Instruct")
         assert model_info is not None
-        assert model_info.model_id == "microsoft/phi-2"
+        assert model_info.model_id == "Qwen/Qwen2.5-7B-Instruct"
     
     def test_get_model_info_not_exists(self):
         """Test retrieving info for non-existent model."""

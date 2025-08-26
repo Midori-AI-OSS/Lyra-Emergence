@@ -170,7 +170,7 @@ class LyraTUI:
         self.console.print(self.create_model_selection_panel())
         
         # Get model choice
-        model_id = Prompt.ask("Enter model ID (e.g., microsoft/phi-2)")
+        model_id = Prompt.ask("Enter model ID (e.g., Qwen/Qwen2.5-7B-Instruct)")
         
         if model_id:
             with self.console.status(f"[bold green]Loading {model_id}..."):

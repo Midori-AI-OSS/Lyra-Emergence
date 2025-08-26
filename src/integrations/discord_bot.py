@@ -27,7 +27,7 @@ class LyraDiscordBot(discord.Client):
 def _build_session() -> ChatSession:
     """Create a chat session with a HuggingFace LLM for responses."""
     llm = safe_load_pipeline(
-        model_id="microsoft/phi-2",
+        model_id="Qwen/Qwen2.5-7B-Instruct",
         task="text-generation",
         pipeline_kwargs={"max_new_tokens": 4000},
     )

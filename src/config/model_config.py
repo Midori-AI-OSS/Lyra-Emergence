@@ -20,7 +20,7 @@ class ModelConfig:
     including device mapping, memory management, and quantization options.
     """
     # Model identification
-    model_id: str = "microsoft/phi-2"
+    model_id: str = "Qwen/Qwen2.5-7B-Instruct"
     task: str = "text-generation"
     
     # Device and memory configuration
