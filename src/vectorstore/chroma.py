@@ -7,16 +7,17 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
 
 from src.journal.parser import parse_journal
+from src.utils.device_fallback import safe_load_embeddings
 
 _EMBEDDINGS: Embeddings | None = None
 
 
 def _get_embeddings() -> Embeddings:
-    """Return a reusable embedding model."""
+    """Return a reusable embedding model with VRAM OOM fallback."""
 
     global _EMBEDDINGS
     if _EMBEDDINGS is None:
-        _EMBEDDINGS = HuggingFaceEmbeddings(
+        _EMBEDDINGS = safe_load_embeddings(
             model_name="sentence-transformers/all-MiniLM-L6-v2",
         )
     return _EMBEDDINGS
