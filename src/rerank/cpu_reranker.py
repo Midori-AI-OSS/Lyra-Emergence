@@ -1,10 +1,10 @@
 """CPU-based reranker for journal entries using Flashrank."""
 
-from typing import Sequence
+from collections.abc import Sequence
 
 from flashrank import Ranker
-from langchain_core.documents import Document
 from langchain_community.document_compressors.flashrank_rerank import FlashrankRerank
+from langchain_core.documents import Document
 
 _DEFAULT_RANKER: Ranker | None = None
 

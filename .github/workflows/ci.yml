@@ -1,0 +1,70 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  json-lint:
+    name: JSON Linting
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Validate JSON files in data directory
+      run: |
+        python scripts/validate_json.py data/
+
+  python-lint-and-test:
+    name: Python Linting and Testing
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
+    
+    - name: Install uv
+      uses: astral-sh/setup-uv@v3
+      with:
+        version: "latest"
+    
+    - name: Sync dependencies
+      run: uv sync
+    
+    - name: Install development dependencies
+      run: |
+        uv add --dev ruff black isort mypy
+    
+    - name: Run ruff linting
+      run: uv run ruff check . --fix || echo "⚠️ Ruff found issues (non-blocking)"
+    
+    - name: Run black formatting check
+      run: uv run black --check . || echo "⚠️ Black formatting issues found (non-blocking)"
+    
+    - name: Run isort import sorting check
+      run: uv run isort --check-only . || echo "⚠️ Import sorting issues found (non-blocking)"
+    
+    - name: Run mypy type checking
+      run: uv run mypy src/ --ignore-missing-imports || echo "⚠️ MyPy found type issues (non-blocking)"
+    
+    - name: Run tests with pytest
+      run: uv run pytest -v
+      env:
+        # Set environment variables for offline testing
+        TRANSFORMERS_OFFLINE: 1
+        HF_HUB_OFFLINE: 1

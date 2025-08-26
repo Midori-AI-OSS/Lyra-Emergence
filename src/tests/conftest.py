@@ -41,4 +41,3 @@ def chroma_dir(tmp_path: Path, journal_file: Path) -> Path:
         embedding=FakeEmbeddings(size=32),
     )
     return persist
-

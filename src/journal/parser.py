@@ -1,10 +1,9 @@
 """Read Lyra journal entries stored as JSON."""
 
 import json
-
-from typing import Any
-from pathlib import Path
 from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
 
 
 @dataclass

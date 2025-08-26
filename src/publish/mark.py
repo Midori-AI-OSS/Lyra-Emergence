@@ -1,6 +1,6 @@
 import json
-from typing import Any
 from pathlib import Path
+from typing import Any
 
 
 def toggle_publish_flag(journal_path: Path, entry_id: str) -> bool:

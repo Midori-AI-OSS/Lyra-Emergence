@@ -2,9 +2,8 @@
 
 from pathlib import Path
 
-from langchain_core.embeddings import Embeddings
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import Chroma
+from langchain_core.embeddings import Embeddings
 
 from src.journal.parser import parse_journal
 from src.utils.device_fallback import safe_load_embeddings
@@ -67,4 +66,3 @@ def search(
     client = get_client(persist_directory, embedding=embedding)
     docs = client.similarity_search(query, k)
     return [doc.page_content for doc in docs]
-

@@ -26,4 +26,3 @@ def test_parse_missing_entries_key(tmp_path) -> None:
         json.dump({}, fh)
     with pytest.raises(KeyError):
         parse_journal(bad)
-
