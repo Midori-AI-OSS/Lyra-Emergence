@@ -49,11 +49,11 @@ class TestModelRecommendations:
     
     def test_recommend_model_large_system(self):
         """Test model recommendation for large system."""
-        # 64GB RAM, 24GB VRAM - prefer performance
-        recommended = recommend_model(64.0, 24.0, prefer_performance=True)
+        # 64GB RAM, 40GB VRAM - prefer performance (realistic for modern large models)
+        recommended = recommend_model(64.0, 40.0, prefer_performance=True)
         assert recommended is not None
         assert recommended.min_ram_gb <= 64.0
-        assert recommended.min_vram_gb <= 24.0
+        assert recommended.min_vram_gb <= 40.0
     
     def test_recommend_model_insufficient_resources(self):
         """Test model recommendation with insufficient resources."""

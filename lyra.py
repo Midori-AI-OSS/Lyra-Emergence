@@ -86,7 +86,7 @@ def main() -> None:
         config_path=args.model_config,
         pipeline_kwargs=config.to_pipeline_kwargs(),
     )
-    session = ChatSession(console=console, rerank=args.rerank, llm=llm)
+    session = ChatSession(console=console, rerank=args.rerank, llm=llm, model_id=config.model_id)
     session.run()
 
 

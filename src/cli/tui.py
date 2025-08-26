@@ -31,6 +31,7 @@ class LyraTUI:
         self.chat_session: Optional[ChatSession] = None
         self.layout = Layout()
         self.chat_history: List[tuple[str, str]] = []  # (user, bot) pairs
+        self.current_model_id: Optional[str] = None  # Track current model for templating
         
     def create_header(self) -> Panel:
         """Create the header panel."""
@@ -54,8 +55,15 @@ class LyraTUI:
         
         if self.llm:
             # Try to get model info
-            model_name = getattr(self.llm, 'model_id', 'Unknown')
+            model_name = getattr(self.llm, 'model_id', self.current_model_id or 'Unknown')
             status_table.add_row("🤖 Active Model", model_name)
+            
+            # Show chat template info if available
+            if self.chat_session and hasattr(self.chat_session, 'template_manager'):
+                template_info = self.chat_session.get_template_info()
+                if template_info:
+                    template_status = "✓ Auto" if template_info.get("has_chat_template") else "⚠ Fallback"
+                    status_table.add_row("🎭 Chat Template", template_status)
         
         return Panel(status_table, title="System Status", style="green")
     
@@ -150,14 +158,15 @@ class LyraTUI:
         with self.console.status("[bold green]Auto-selecting optimal model..."):
             try:
                 config = load_config(auto_select=True)
+                self.current_model_id = config.model_id
                 self.llm = safe_load_pipeline(
                     model_id=config.model_id,
                     task=config.task,
                     pipeline_kwargs=config.to_pipeline_kwargs(),
                 )
-                self.chat_session = ChatSession(console=self.console, llm=self.llm)
+                self.chat_session = ChatSession(console=self.console, llm=self.llm, model_id=self.current_model_id)
                 
-                self.console.print(f"✅ Successfully loaded model: {config.model_id}", style="bold green")
+                self.console.print(f"✅ Successfully loaded model: {self.current_model_id}", style="bold green")
                 Prompt.ask("Press Enter to continue")
                 
             except Exception as e:
@@ -175,12 +184,13 @@ class LyraTUI:
         if model_id:
             with self.console.status(f"[bold green]Loading {model_id}..."):
                 try:
+                    self.current_model_id = model_id
                     self.llm = safe_load_pipeline(
                         model_id=model_id,
                         task="text-generation",
                         pipeline_kwargs={"max_new_tokens": 4000},
                     )
-                    self.chat_session = ChatSession(console=self.console, llm=self.llm)
+                    self.chat_session = ChatSession(console=self.console, llm=self.llm, model_id=self.current_model_id)
                     
                     self.console.print(f"✅ Successfully loaded model: {model_id}", style="bold green")
                     
@@ -276,7 +286,7 @@ class LyraTUI:
         # Use the existing ChatSession but customize it
         try:
             if not self.chat_session:
-                self.chat_session = ChatSession(console=self.console, llm=self.llm)
+                self.chat_session = ChatSession(console=self.console, llm=self.llm, model_id=self.current_model_id)
             
             self.chat_session.run()
             
