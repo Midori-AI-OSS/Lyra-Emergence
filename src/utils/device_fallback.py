@@ -93,6 +93,9 @@ def safe_load_model_with_config(
     # Set device_map from config if not explicitly provided
     if "device_map" not in kwargs and config.device_map:
         kwargs["device_map"] = config.device_map
+        # Remove device_map from model_kwargs to avoid conflict
+        if "device_map" in kwargs["model_kwargs"]:
+            del kwargs["model_kwargs"]["device_map"]
 
     try:
         # First attempt with configured parameters

@@ -214,3 +214,26 @@ class TestSafeLoadPipeline:
         # Verify config was updated with provided model_id and task
         assert mock_config.model_id == "test/model"
         assert mock_config.task == "text-generation"
+
+    def test_device_map_conflict_resolution(self) -> None:
+        """Test that device_map conflicts are resolved properly."""
+        from unittest.mock import Mock
+        
+        def mock_loader(*args, **kwargs):
+            # Verify device_map is not in both places
+            device_map_in_kwargs = "device_map" in kwargs
+            device_map_in_model_kwargs = (
+                "model_kwargs" in kwargs 
+                and "device_map" in kwargs.get("model_kwargs", {})
+            )
+            
+            if device_map_in_kwargs and device_map_in_model_kwargs:
+                raise ValueError("`device_map` is already specified in `model_kwargs`.")
+            
+            return "success"
+        
+        config = ModelConfig(device_map="auto")
+        
+        # This should not raise a ValueError
+        result = safe_load_model_with_config(mock_loader, config, "test-model", "task")
+        assert result == "success"
