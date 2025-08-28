@@ -109,8 +109,12 @@ class TestConfigLoading:
 class TestProgressiveDeviceMap:
     """Test cases for progressive device mapping."""
 
-    def test_create_progressive_device_map_basic(self) -> None:
+    @patch("src.utils.device_fallback._detect_available_devices")
+    def test_create_progressive_device_map_basic(self, mock_detect_devices) -> None:
         """Test basic progressive device map creation."""
+        # Mock GPU being available for testing
+        mock_detect_devices.return_value = {"cuda": True, "mps": False, "cpu": True}
+        
         device_map = _create_progressive_device_map(gpu_layers=4, total_layers=8)
 
         # Check embedding layer on GPU
@@ -128,8 +132,12 @@ class TestProgressiveDeviceMap:
         assert device_map["model.norm"] == "cpu"
         assert device_map["lm_head"] == "cpu"
 
-    def test_create_progressive_device_map_all_gpu(self) -> None:
+    @patch("src.utils.device_fallback._detect_available_devices")
+    def test_create_progressive_device_map_all_gpu(self, mock_detect_devices) -> None:
         """Test device map when all layers fit on GPU."""
+        # Mock GPU being available for testing
+        mock_detect_devices.return_value = {"cuda": True, "mps": False, "cpu": True}
+        
         device_map = _create_progressive_device_map(gpu_layers=8, total_layers=8)
 
         # All layers should be on GPU
@@ -140,8 +148,12 @@ class TestProgressiveDeviceMap:
         assert device_map["model.norm"] == 0
         assert device_map["lm_head"] == 0
 
-    def test_create_progressive_device_map_default_layers(self) -> None:
+    @patch("src.utils.device_fallback._detect_available_devices")
+    def test_create_progressive_device_map_default_layers(self, mock_detect_devices) -> None:
         """Test device map with default layer count."""
+        # Mock GPU being available for testing
+        mock_detect_devices.return_value = {"cuda": True, "mps": False, "cpu": True}
+        
         device_map = _create_progressive_device_map(gpu_layers=16)
 
         # Should default to 32 total layers
@@ -154,9 +166,13 @@ class TestProgressiveDeviceMap:
 class TestSafeLoadModelWithConfig:
     """Test cases for safe_load_model_with_config function."""
 
+    @patch("src.utils.device_fallback._detect_available_devices")
     @patch("src.utils.device_fallback.load_config")
-    def test_safe_load_model_with_config_success(self, mock_load_config) -> None:
+    def test_safe_load_model_with_config_success(self, mock_load_config, mock_detect_devices) -> None:
         """Test successful model loading with config."""
+        # Mock GPU being available for testing
+        mock_detect_devices.return_value = {"cuda": True, "mps": False, "cpu": True}
+        
         mock_config = ModelConfig(device_map="auto")
         mock_load_config.return_value = mock_config
 
@@ -238,8 +254,12 @@ class TestSafeLoadPipeline:
         result = safe_load_model_with_config(mock_loader, config, "test-model", "task")
         assert result == "success"
 
-    def test_device_map_priority_logic(self) -> None:
+    @patch("src.utils.device_fallback._detect_available_devices")
+    def test_device_map_priority_logic(self, mock_detect_devices) -> None:
         """Test the priority logic for device_map handling."""
+        # Mock GPU being available for testing
+        mock_detect_devices.return_value = {"cuda": True, "mps": False, "cpu": True}
+        
         from unittest.mock import Mock
         
         captured_kwargs = {}
