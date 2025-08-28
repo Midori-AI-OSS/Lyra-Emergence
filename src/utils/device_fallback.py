@@ -79,8 +79,23 @@ def safe_load_model_with_config(
     if config is None:
         config = load_config()
 
-    # Merge config kwargs with provided kwargs
-    model_kwargs = config.to_model_kwargs()
+    # Determine device_map strategy: prioritize explicit kwargs over config
+    device_map_from_kwargs = kwargs.get("device_map")
+    device_map_from_config = config.device_map if config.device_map else None
+    
+    # Choose the device_map source and build model_kwargs accordingly
+    if device_map_from_kwargs is not None:
+        # Explicit device_map provided, exclude it from model_kwargs to avoid conflict
+        model_kwargs = {k: v for k, v in config.to_model_kwargs().items() if k != "device_map"}
+    elif device_map_from_config is not None:
+        # Use config device_map directly in kwargs, exclude from model_kwargs
+        kwargs["device_map"] = device_map_from_config
+        model_kwargs = {k: v for k, v in config.to_model_kwargs().items() if k != "device_map"}
+    else:
+        # No device_map specified anywhere, include all config kwargs
+        model_kwargs = config.to_model_kwargs()
+    
+    # Merge with any existing model_kwargs from caller
     model_kwargs.update(kwargs.get("model_kwargs", {}))
     kwargs["model_kwargs"] = model_kwargs
 
@@ -89,10 +104,6 @@ def safe_load_model_with_config(
     if "pipeline_kwargs" in kwargs:
         pipeline_kwargs.update(kwargs["pipeline_kwargs"])
     kwargs["pipeline_kwargs"] = pipeline_kwargs
-
-    # Set device_map from config if not explicitly provided
-    if "device_map" not in kwargs and config.device_map:
-        kwargs["device_map"] = config.device_map
 
     try:
         # First attempt with configured parameters
