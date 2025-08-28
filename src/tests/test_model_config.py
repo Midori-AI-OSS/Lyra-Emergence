@@ -237,3 +237,45 @@ class TestSafeLoadPipeline:
         # This should not raise a ValueError
         result = safe_load_model_with_config(mock_loader, config, "test-model", "task")
         assert result == "success"
+
+    def test_device_map_priority_logic(self) -> None:
+        """Test the priority logic for device_map handling."""
+        from unittest.mock import Mock
+        
+        captured_kwargs = {}
+        
+        def mock_loader(*args, **kwargs):
+            nonlocal captured_kwargs
+            captured_kwargs = kwargs
+            return "success"
+        
+        # Test 1: Explicit device_map in kwargs should take priority
+        config = ModelConfig(device_map="auto", load_in_8bit=True)
+        result = safe_load_model_with_config(
+            mock_loader, config, "test-model", "task", device_map="cpu"
+        )
+        assert result == "success"
+        assert captured_kwargs["device_map"] == "cpu"  # Explicit kwargs wins
+        assert "device_map" not in captured_kwargs["model_kwargs"]  # Should not be in model_kwargs
+        assert captured_kwargs["model_kwargs"]["load_in_8bit"] is True  # Other config items still present
+        
+        # Test 2: Config device_map used when no explicit kwargs
+        captured_kwargs = {}
+        result = safe_load_model_with_config(
+            mock_loader, config, "test-model", "task"
+        )
+        assert result == "success"
+        assert captured_kwargs["device_map"] == "auto"  # From config
+        assert "device_map" not in captured_kwargs["model_kwargs"]  # Should not be in model_kwargs
+        assert captured_kwargs["model_kwargs"]["load_in_8bit"] is True  # Other config items still present
+        
+        # Test 3: No device_map anywhere
+        config_no_device = ModelConfig(load_in_8bit=True)  # No device_map set
+        captured_kwargs = {}
+        result = safe_load_model_with_config(
+            mock_loader, config_no_device, "test-model", "task"
+        )
+        assert result == "success"
+        assert "device_map" not in captured_kwargs  # No device_map in top level
+        assert "device_map" not in captured_kwargs["model_kwargs"]  # No device_map in model_kwargs either
+        assert captured_kwargs["model_kwargs"]["load_in_8bit"] is True  # Other config items still present
