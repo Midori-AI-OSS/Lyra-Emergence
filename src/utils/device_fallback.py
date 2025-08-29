@@ -150,8 +150,12 @@ def safe_load_model_with_config(
         # No device_map specified anywhere, include all config kwargs
         model_kwargs = config.to_model_kwargs()
     
+    # Only set device_map if validation returned a valid value (not None)
     if final_device_map is not None:
         kwargs["device_map"] = final_device_map
+    else:
+        # Remove device_map if it exists to avoid accelerate requirement when no GPU
+        kwargs.pop("device_map", None)
     
     # Merge with any existing model_kwargs from caller
     model_kwargs.update(kwargs.get("model_kwargs", {}))
@@ -173,9 +177,9 @@ def safe_load_model_with_config(
     except (torch.cuda.OutOfMemoryError, RuntimeError, ValueError) as e:
         error_msg = str(e).lower()
         
-        # Check for device-related errors
-        if "device" in error_msg and "not recognized" in error_msg:
-            logger.warning(f"Device mapping error: {e}. Falling back to CPU.")
+        # Check for device-related errors and accelerate requirement errors
+        if ("device" in error_msg and "not recognized" in error_msg) or "accelerate" in error_msg:
+            logger.warning(f"Device/accelerate error: {e}. Falling back to CPU.")
             return _fallback_to_cpu_for_device_error(model_loader, *args, **kwargs)
         
         # Check for OOM errors
@@ -230,21 +234,25 @@ def _validate_device_map(device_map: Any, available_devices: dict[str, bool]) ->
         available_devices: Dictionary of available devices
         
     Returns:
-        Validated device map or adjusted map if needed
+        Validated device map, adjusted map, or None if device_map should be removed
     """
     if device_map == "auto":
-        # For testing environments, preserve "auto" and let HuggingFace handle it
-        # Only override if we know for certain that GPU is not available
-        # and only in production scenarios (when we detect real GPU absence)
-        return "auto"
+        # Only use device_map="auto" when GPU is actually available
+        # If no GPU is available, return None to remove device_map entirely
+        if available_devices["cuda"] or available_devices["mps"]:
+            return "auto"
+        else:
+            logger.debug("No GPU available, removing device_map to avoid accelerate requirement")
+            return None
     
     elif isinstance(device_map, dict):
         # Custom device mapping - let HuggingFace handle detailed validation
         return device_map
     
     elif device_map == "cpu":
-        # CPU mapping is always valid
-        return device_map
+        # CPU mapping should be removed - device_map is not needed for CPU-only usage
+        logger.debug("CPU device_map detected, removing to avoid accelerate requirement")
+        return None
     
     else:
         # Other device mappings - preserve them for HuggingFace to validate
@@ -261,9 +269,8 @@ def _fallback_to_cpu(model_loader: Callable[..., T], *args: Any, **kwargs: Any) 
     else:
         kwargs["model_kwargs"] = {"device": "cpu"}
 
-    # Also try device_map for HuggingFace models
-    if "device_map" in kwargs:
-        kwargs["device_map"] = "cpu"
+    # Remove device_map entirely for CPU-only usage (avoid accelerate requirement)
+    kwargs.pop("device_map", None)
 
     logger.info("Retrying model loading on CPU")
     return model_loader(*args, **kwargs)
@@ -279,8 +286,8 @@ def _fallback_to_cpu_for_device_error(model_loader: Callable[..., T], *args: Any
     else:
         kwargs["model_kwargs"] = {"device": "cpu"}
 
-    # Always set device_map to CPU for device errors
-    kwargs["device_map"] = "cpu"
+    # Remove device_map entirely for CPU-only usage (avoid accelerate requirement)
+    kwargs.pop("device_map", None)
     
     # Remove any memory constraints that don't apply to CPU
     if "model_kwargs" in kwargs and kwargs["model_kwargs"] and "max_memory" in kwargs["model_kwargs"]:
@@ -315,9 +322,9 @@ def safe_load_model(model_loader: Callable[..., T], *args: Any, **kwargs: Any) -
     except (torch.cuda.OutOfMemoryError, RuntimeError, ValueError) as e:
         error_msg = str(e).lower()
         
-        # Check for device-related errors
-        if "device" in error_msg and "not recognized" in error_msg:
-            logger.warning(f"Device mapping error: {e}. Falling back to CPU.")
+        # Check for device-related errors and accelerate requirement errors
+        if ("device" in error_msg and "not recognized" in error_msg) or "accelerate" in error_msg:
+            logger.warning(f"Device/accelerate error: {e}. Falling back to CPU.")
             return _fallback_to_cpu_for_device_error(model_loader, *args, **kwargs)
         
         # Check if it's a CUDA OOM error

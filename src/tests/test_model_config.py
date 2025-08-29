@@ -269,23 +269,23 @@ class TestSafeLoadPipeline:
             captured_kwargs = kwargs
             return "success"
         
-        # Test 1: Explicit device_map in kwargs should take priority
+        # Test 1: Explicit device_map="cpu" should be removed to avoid accelerate requirement
         config = ModelConfig(device_map="auto", load_in_8bit=True)
         result = safe_load_model_with_config(
             mock_loader, config, "test-model", "task", device_map="cpu"
         )
         assert result == "success"
-        assert captured_kwargs["device_map"] == "cpu"  # Explicit kwargs wins
+        assert "device_map" not in captured_kwargs  # CPU device_map should be removed
         assert "device_map" not in captured_kwargs["model_kwargs"]  # Should not be in model_kwargs
         assert captured_kwargs["model_kwargs"]["load_in_8bit"] is True  # Other config items still present
         
-        # Test 2: Config device_map used when no explicit kwargs
+        # Test 2: Config device_map="auto" should be preserved when GPU is available
         captured_kwargs = {}
         result = safe_load_model_with_config(
             mock_loader, config, "test-model", "task"
         )
         assert result == "success"
-        assert captured_kwargs["device_map"] == "auto"  # From config
+        assert captured_kwargs["device_map"] == "auto"  # From config, GPU available
         assert "device_map" not in captured_kwargs["model_kwargs"]  # Should not be in model_kwargs
         assert captured_kwargs["model_kwargs"]["load_in_8bit"] is True  # Other config items still present
         
@@ -298,4 +298,28 @@ class TestSafeLoadPipeline:
         assert result == "success"
         assert "device_map" not in captured_kwargs  # No device_map in top level
         assert "device_map" not in captured_kwargs["model_kwargs"]  # No device_map in model_kwargs either
+
+    @patch("src.utils.device_fallback._detect_available_devices")
+    def test_device_map_removed_when_no_gpu(self, mock_detect_devices) -> None:
+        """Test that device_map='auto' is removed when no GPU is available."""
+        # Mock no GPU being available
+        mock_detect_devices.return_value = {"cuda": False, "mps": False, "cpu": True}
+        
+        from unittest.mock import Mock
+        
+        captured_kwargs = {}
+        
+        def mock_loader(*args, **kwargs):
+            nonlocal captured_kwargs
+            captured_kwargs = kwargs
+            return "success"
+        
+        # device_map="auto" should be removed when no GPU available
+        config = ModelConfig(device_map="auto", load_in_8bit=True)
+        result = safe_load_model_with_config(
+            mock_loader, config, "test-model", "task"
+        )
+        assert result == "success"
+        assert "device_map" not in captured_kwargs  # Should be removed when no GPU
+        assert captured_kwargs["model_kwargs"]["load_in_8bit"] is True  # Other config items still present
         assert captured_kwargs["model_kwargs"]["load_in_8bit"] is True  # Other config items still present
