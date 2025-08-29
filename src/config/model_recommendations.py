@@ -38,16 +38,16 @@ MODEL_DATABASE: list[ModelInfo] = [
         license="Apache 2.0",
     ),
     ModelInfo(
-        model_id="google/gemma-2-9b-it",
+        model_id="deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
         size_category="small",
-        parameter_count="9B",
+        parameter_count="8B",
         min_ram_gb=8.0,
         min_vram_gb=5.0,
         recommended_ram_gb=16.0,
         recommended_vram_gb=10.0,
         quantization_support=["8bit", "4bit"],
-        description="Google's latest Gemma 2 instruction-tuned model with strong capabilities (2024)",
-        license="Gemma",
+        description="Unknown, needs updating",
+        license="???",
     ),
     # Medium models (10B - 32B parameters) - 2024/2025 latest models
     ModelInfo(
