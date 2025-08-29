@@ -179,7 +179,7 @@ Examples:
   python encrypted_storage_demo.py demo
   
   # Migrate existing JSON journals
-  python encrypted_storage_demo.py migrate data/journal encrypted_journals storage.key
+  python encrypted_storage_demo.py migrate data/gemjournals encrypted_journals storage.key
   
   # Export encrypted files back to JSON  
   python encrypted_storage_demo.py export encrypted_journals storage.key exported_json
