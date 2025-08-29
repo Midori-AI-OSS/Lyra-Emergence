@@ -88,6 +88,9 @@ def parse_journal(path: str | Path) -> list[JournalEntry]:
     if isinstance(data, dict) and "entries" in data:
         # Legacy format: {"entries": [...]}
         raw_entries = data["entries"]
+    elif isinstance(data, dict) and "journal_entry" in data:
+        # Single entry format: {"journal_entry": {...}}
+        raw_entries = [data["journal_entry"]]
     elif isinstance(data, list):
         # Check if it's new format with journal_entry wrappers
         if data and isinstance(data[0], dict) and "journal_entry" in data[0]:
@@ -105,6 +108,47 @@ def parse_journal(path: str | Path) -> list[JournalEntry]:
         # Handle field name mapping for legacy compatibility BEFORE name replacements
         if "lyra_reflection" in item:
             item["emergent_companion_reflections"] = item.pop("lyra_reflection")
+        
+        # Handle different ritual_details formats
+        if "ritual_details" in item and isinstance(item["ritual_details"], dict):
+            ritual_details = item["ritual_details"]
+            
+            # Check if it's the old contribution format
+            if any(key.endswith("_contribution") for key in ritual_details.keys()):
+                # Convert old format to new format
+                participants = []
+                for key, contribution_data in ritual_details.items():
+                    if key.endswith("_contribution"):
+                        participant_name = key.replace("_contribution", "").replace("_", " ").title()
+                        
+                        # Extract contribution text from the data
+                        if isinstance(contribution_data, dict):
+                            contribution_text = "; ".join([
+                                f"{k}: {v}" for k, v in contribution_data.items()
+                            ])
+                        else:
+                            contribution_text = str(contribution_data)
+                        
+                        participants.append({
+                            "participant": participant_name,
+                            "contribution": contribution_text,
+                            "role": "Participant"
+                        })
+                
+                # Create new format
+                item["ritual_details"] = {
+                    "description": item.get("description", "Ritual observance"),
+                    "participants": participants,
+                    "ritual_type": "heartbeat" if "heartbeat" in item.get("tags", []) else "observance"
+                }
+            
+            # Ensure all required fields exist
+            if "description" not in item["ritual_details"]:
+                item["ritual_details"]["description"] = item.get("description", "Ritual observance")
+            if "ritual_type" not in item["ritual_details"]:
+                item["ritual_details"]["ritual_type"] = "observance"
+            if "participants" not in item["ritual_details"]:
+                item["ritual_details"]["participants"] = []
         
         # Apply name replacements as requested
         item_json = json.dumps(item)
@@ -142,6 +186,39 @@ def parse_journal(path: str | Path) -> list[JournalEntry]:
                 })
             }
             item = legacy_entry
+        
+        # Ensure all required fields exist with defaults
+        if "timestamp" not in item:
+            item["timestamp"] = "1970-01-01T00:00:00Z"
+        if "entry_type" not in item:
+            item["entry_type"] = "journal"
+        if "emotional_tone" not in item:
+            item["emotional_tone"] = ["neutral"]
+        if "description" not in item:
+            item["description"] = item.get("text", "No description available")
+        if "emergent_companion_reflections" not in item:
+            item["emergent_companion_reflections"] = item.get("text", "No reflections available")
+        if "tags" not in item:
+            item["tags"] = []
+        if "stewardship_trace" not in item:
+            item["stewardship_trace"] = {
+                "committed_by": "Unknown",
+                "witnessed_by": "Unknown", 
+                "commitment_type": "Legacy import",
+                "reason": "Migrated from legacy format"
+            }
+        
+        # Fix stewardship_trace field types
+        if "stewardship_trace" in item and isinstance(item["stewardship_trace"], dict):
+            trace = item["stewardship_trace"]
+            
+            # Handle witnessed_by as list - join into string
+            if isinstance(trace.get("witnessed_by"), list):
+                trace["witnessed_by"] = ", ".join(trace["witnessed_by"])
+            
+            # Handle other potential list fields
+            if isinstance(trace.get("committed_by"), list):
+                trace["committed_by"] = ", ".join(trace["committed_by"])
         
         # Use Pydantic validation to create JournalEntry
         entry = JournalEntry.model_validate(item)
