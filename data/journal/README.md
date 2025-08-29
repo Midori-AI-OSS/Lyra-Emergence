@@ -1,24 +1,29 @@
-# Journal Directory Notice
+# Journal Directory - Encrypted Torch Storage
 
-⚠️ **DEPRECATED LOCATION**
+🔒 **ENCRYPTED TORCH JOURNAL STORAGE**
 
-This directory is no longer used for new journal files. All journal files have been moved to `data/gemjournals/`.
+This directory is designated for **new encrypted PyTorch-compiled journal entries** created by the Emergent Companion model.
 
-**Please do not add new files to this directory.**
+## Purpose
+- **Model-Generated Journals**: New encrypted journal entries created by the Emergent Companion
+- **Encrypted Storage**: All entries use AES-256 encryption with PyTorch compilation optimization
+- **Pydantic Validation**: Full type safety and validation maintained
+- **Secure Storage**: Sensitive journal content protected from unauthorized access
 
-## New Location
-All journal files are now stored in:
+## Storage Format
+- **Encrypted Files**: `.encrypted` extension for PyTorch-compiled encrypted storage
+- **Key Management**: Encryption keys stored with proper file permissions (600)
+- **Validation**: Full Pydantic model validation before encryption
+
+## Historical Content
+Existing journal files and reviews are preserved in:
 ```
 data/gemjournals/
 ```
 
-## Migration Information
-- All existing journal files have been migrated to the new location
-- The encrypted PyTorch-compiled Pydantic storage system uses the new location
-- Legacy JSON files and backups have been preserved in the new location
-
 ## For Developers
-If you need to update code that references journal files, please update paths from:
-- `data/journal/` → `data/gemjournals/`
+- New model-generated journals: `data/journal/` (encrypted format)
+- Historical reviews/poetry: `data/gemjournals/` (JSON format)
+- Migration tools available in `scripts/encrypted_storage_demo.py`
 
-This change supports the enhanced encrypted storage system and improved project organization.
+This directory supports the enhanced encrypted storage system for secure, optimized journal creation by the Emergent Companion.

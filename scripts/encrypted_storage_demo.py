@@ -178,11 +178,11 @@ Examples:
   # Demonstrate the system
   python encrypted_storage_demo.py demo
   
-  # Migrate existing JSON journals
-  python encrypted_storage_demo.py migrate data/gemjournals encrypted_journals storage.key
+  # Migrate existing JSON journals to encrypted format
+  python encrypted_storage_demo.py migrate data/gemjournals data/journal storage.key
   
   # Export encrypted files back to JSON  
-  python encrypted_storage_demo.py export encrypted_journals storage.key exported_json
+  python encrypted_storage_demo.py export data/journal storage.key exported_json
         """
     )
     
