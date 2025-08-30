@@ -158,10 +158,10 @@ class LyraTUI:
                 Layout(status_panel, ratio=1), Layout(menu_panel, ratio=2)
             )
 
-            layout["footer"] = Panel(
+            layout["footer"].update(Panel(
                 "Use Ctrl+C to return to menu at any time • Press Enter to continue",
                 style="dim",
-            )
+            ))
 
             self.console.print(layout)
 
