@@ -33,10 +33,17 @@ class LyraTUI:
 
     def create_header(self) -> Panel:
         """Create the header panel."""
-        title = Text("🌟 Lyra-Emergence Interactive AI", style="bold magenta")
-        subtitle = Text("Advanced Language Model Interface", style="dim")
-        header_content = Align.center(Text.assemble(title, "\n", subtitle))
-        return Panel(header_content, style="blue", padding=(1, 2))
+        header_text = Text.assemble(
+            ("🌟 Lyra-Emergence Interactive AI", "bold cyan"),
+            ("\n", ""),
+            ("Advanced Language Model Interface", "dim white")
+        )
+        return Panel(
+            Align.center(header_text), 
+            style="blue", 
+            title="Welcome",
+            title_align="center"
+        )
 
     def create_status_panel(self) -> Panel:
         """Create the status panel showing system info."""
