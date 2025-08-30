@@ -18,14 +18,14 @@ class ChatSession:
         self,
         console: Console | None = None,
         input_func: Callable[[str], str] | None = None,
-        rerank: bool = True,
+        rerank: bool = True,  # Always enabled, parameter kept for compatibility
         ranker: Ranker | None = None,
         llm: BaseLanguageModel | None = None,
         model_id: str | None = None,
     ) -> None:
         self.console = console or Console()
         self.input_func = input_func or input
-        self.rerank_enabled = rerank
+        self.rerank_enabled = True  # Always enabled
         self.rerank_client = ranker
         self.llm = llm
         self.model_id = model_id
