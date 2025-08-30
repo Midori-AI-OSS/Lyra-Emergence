@@ -14,32 +14,9 @@ from src.vectorstore.chroma import ingest_journal
 def main() -> None:
     parser = ArgumentParser()
     parser.add_argument(
-        "--ingest",
-        type=Path,
-        help="Path to a journal JSON file to ingest into ChromaDB",
-    )
-    parser.add_argument(
-        "--mark",
-        type=str,
-        help="Toggle publish flag for the journal entry with the given ID",
-    )
-    parser.add_argument(
-        "--journal",
-        type=Path,
-        default=Path("data/gemjournals/sample.json"),
-        help="Path to the journal JSON file",
-    )
-    parser.add_argument(
-        "--rerank",
-        dest="rerank",
+        "--notui",
         action="store_true",
-        help="Enable CPU-based reranking of search results",
-    )
-    parser.add_argument(
-        "--no-rerank",
-        dest="rerank",
-        action="store_false",
-        help="Disable CPU-based reranking",
+        help="Disable the Text User Interface (TUI) and run in command-line mode",
     )
     parser.add_argument(
         "--model-config",
@@ -47,18 +24,32 @@ def main() -> None:
         help="Path to model configuration file for sharding and device mapping",
     )
     parser.add_argument(
-        "--auto-select",
+        "--no-auto-select",
         action="store_true",
-        help="Automatically select optimal model based on available system resources",
+        help="Disable automatic model selection and require manual model configuration",
+    )
+    
+    # Legacy command line tools (deprecated in favor of TUI)
+    parser.add_argument(
+        "--ingest",
+        type=Path,
+        help="Path to a journal JSON file to ingest into ChromaDB (deprecated: use TUI tools menu)",
     )
     parser.add_argument(
-        "--tui",
-        action="store_true",
-        help="Launch the Text User Interface (TUI) for interactive use",
+        "--mark",
+        type=str,
+        help="Toggle publish flag for the journal entry with the given ID (deprecated: use TUI tools menu)",
     )
-    parser.set_defaults(rerank=True)
+    parser.add_argument(
+        "--journal",
+        type=Path,
+        default=Path("data/gemjournals/sample.json"),
+        help="Path to the journal JSON file",
+    )
+    
     args = parser.parse_args()
 
+    # Handle legacy command line tools
     if args.ingest:
         ingest_journal(args.ingest, persist_directory=Path("data/chroma"))
         return
@@ -67,18 +58,20 @@ def main() -> None:
         toggle_publish_flag(args.journal, args.mark)
         return
 
-    # Launch TUI if requested
-    if args.tui:
+    # Default behavior: Launch TUI unless --notui is specified
+    if not args.notui:
         from src.cli.tui import run_tui
 
         run_tui()
         return
 
+    # Command-line mode (when --notui is specified)
     console = Console()
     console.print("Lyra Project startup initialized.")
 
-    # Load model configuration (with optional auto-selection)
-    config = load_config(config_path=args.model_config, auto_select=args.auto_select)
+    # Load model configuration (auto-select is default unless disabled)
+    auto_select = not args.no_auto_select
+    config = load_config(config_path=args.model_config, auto_select=auto_select)
 
     llm: BaseLanguageModel = safe_load_pipeline(
         model_id=config.model_id,
@@ -86,8 +79,9 @@ def main() -> None:
         config_path=args.model_config,
         pipeline_kwargs=config.to_pipeline_kwargs(),
     )
+    # Reranking is always enabled
     session = ChatSession(
-        console=console, rerank=args.rerank, llm=llm, model_id=config.model_id
+        console=console, rerank=True, llm=llm, model_id=config.model_id
     )
     session.run()
 
