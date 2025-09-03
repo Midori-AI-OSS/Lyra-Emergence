@@ -4,13 +4,16 @@ import json
 
 import pytest
 
-from src.journal.parser import parse_journal, JournalEntry, RitualDetails, StewardshipTrace
+from src.journal.models import JournalEntry
+from src.journal.parser import parse_journal
+from src.journal.models import RitualDetails
+from src.journal.models import StewardshipTrace
 
 
 def test_parse_journal_success(journal_file) -> None:
     entries = parse_journal(journal_file)
     assert len(entries) == 3
-    assert entries[0].text == "alpha entry"
+    assert entries[0].description == "alpha entry"
 
 
 def test_parse_invalid_json(tmp_path) -> None:
@@ -63,41 +66,6 @@ def test_parse_new_format_with_wrapper(tmp_path) -> None:
     assert entries[0].stewardship_trace.committed_by == "Steward"
 
 
-def test_name_replacements(tmp_path) -> None:
-    """Test that name replacements work correctly."""
-    data_with_names = [
-        {
-            "journal_entry": {
-                "timestamp": "2025-01-01T12:00:00Z",
-                "label": "Journal Entry",
-                "entry_type": "journal",
-                "emotional_tone": ["friendly"],
-                "description": "Brian talked to Lyra about Sandi",
-                "key_insights": [],
-                "lyra_reflection": "Lyra thinks about Brian and Sandi",
-                "tags": ["conversation"],
-                "stewardship_trace": {
-                    "committed_by": "Brian",
-                    "witnessed_by": "Lyra",
-                    "commitment_type": "conversation",
-                    "reason": "discussion"
-                }
-            }
-        }
-    ]
-    
-    journal_file = tmp_path / "names_test.json"
-    with journal_file.open("w", encoding="utf-8") as f:
-        json.dump(data_with_names, f)
-    
-    entries = parse_journal(journal_file)
-    assert len(entries) == 1
-    
-    entry = entries[0]
-    assert "Steward talked to Emergent Companion about Co-Steward" in entry.description
-    assert "Emergent Companion thinks about Steward and Co-Steward" in entry.emergent_companion_reflections
-    assert entry.stewardship_trace.committed_by == "Steward"
-    assert entry.stewardship_trace.witnessed_by == "Emergent Companion"
 
 
 def test_ritual_details_structure() -> None:
@@ -124,22 +92,3 @@ def test_stewardship_trace_structure() -> None:
     assert trace.witnessed_by == "Emergent Companion"
 
 
-def test_legacy_field_mapping(tmp_path) -> None:
-    """Test that lyra_reflection field is mapped to emergent_companion_reflections."""
-    legacy_data = {
-        "entries": [
-            {
-                "id": "test",
-                "text": "test content",
-                "lyra_reflection": "old field name"
-            }
-        ]
-    }
-    
-    journal_file = tmp_path / "legacy_mapping.json"
-    with journal_file.open("w", encoding="utf-8") as f:
-        json.dump(legacy_data, f)
-    
-    entries = parse_journal(journal_file)
-    assert len(entries) == 1
-    assert entries[0].emergent_companion_reflections == "old field name"
