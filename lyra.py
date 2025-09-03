@@ -5,10 +5,11 @@ from langchain_core.language_models import BaseLanguageModel
 from rich.console import Console
 
 from src.cli.chat import ChatSession
-from src.config.model_config import load_config
 from src.publish.mark import toggle_publish_flag
-from src.utils.device_fallback import safe_load_pipeline
+from src.utils.env_check import get_env_status
 from src.vectorstore.chroma import ingest_journal
+from src.utils.device_fallback import safe_load_pipeline
+from src.config.model_config import load_config
 
 
 def main() -> None:
@@ -48,6 +49,9 @@ def main() -> None:
     )
     
     args = parser.parse_args()
+
+    # Detect environment status so other modules can react accordingly
+    get_env_status()
 
     # Handle legacy command line tools
     if args.ingest:

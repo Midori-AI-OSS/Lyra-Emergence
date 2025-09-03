@@ -2,20 +2,21 @@
 
 from pathlib import Path
 
-from langchain_core.language_models import BaseLanguageModel
-from rich.align import Align
-from rich.console import Console
-from rich.layout import Layout
-from rich.panel import Panel
-from rich.prompt import Prompt
-from rich.table import Table
 from rich.text import Text
+from rich.align import Align
+from rich.panel import Panel
+from rich.table import Table
+from rich.layout import Layout
+from rich.prompt import Prompt
+from rich.console import Console
+from langchain_core.language_models import BaseLanguageModel
 
 from src.cli.chat import ChatSession
 from src.config.model_config import load_config
 from src.config.model_recommendations import MODEL_DATABASE, get_models_by_category
 from src.publish.mark import toggle_publish_flag
 from src.utils.device_fallback import safe_load_pipeline
+from src.utils.env_check import get_env_status
 from src.utils.system_info import get_available_memory, get_memory_tier
 from src.vectorstore.chroma import ingest_journal
 
@@ -25,6 +26,7 @@ class LyraTUI:
 
     def __init__(self):
         self.console = Console()
+        self.env_status = get_env_status()
         self.llm: BaseLanguageModel | None = None
         self.chat_session: ChatSession | None = None
         self.layout = Layout()
@@ -59,6 +61,23 @@ class LyraTUI:
             "🖥️  Available VRAM", f"{vram_gb:.1f} GB" if vram_gb > 0 else "No GPU"
         )
         status_table.add_row("📊 Memory Tier", memory_tier.title())
+
+        status_table.add_row(
+            "🧠 PixelArch",
+            "Yes" if self.env_status.is_pixelarch else "No",
+        )
+        status_table.add_row(
+            "🌐 Internet",
+            "Yes" if self.env_status.has_internet else "No",
+        )
+        status_table.add_row(
+            "🍵 TeaCup",
+            "Up" if self.env_status.endpoint_ok else "Down",
+        )
+        status_table.add_row(
+            "🛠️  Tools",
+            "Enabled" if self.env_status.network_tools_enabled else "Disabled",
+        )
 
         if self.llm:
             # Try to get model info
@@ -340,9 +359,26 @@ class LyraTUI:
 
     def show_tools_menu(self):
         """Show the tools menu for journal operations."""
+        if not self.env_status.tools_enabled:
+            self.console.clear()
+            self.console.print(
+                "⚠️  Tools are disabled on non-PixelArch systems.", style="bold yellow"
+            )
+            Prompt.ask("Press Enter to continue")
+            return
+
+        if not self.env_status.network_tools_enabled:
+            self.console.clear()
+            self.console.print(
+                "⚠️  Network tools are disabled due to connectivity issues.",
+                style="bold yellow",
+            )
+            Prompt.ask("Press Enter to continue")
+            return
+
         while True:
             self.console.clear()
-            
+
             tools_text = Text.assemble(
                 ("🛠️  Tools Menu\n\n", "bold cyan"),
                 ("1. Ingest Journal File\n", "green"),
@@ -352,13 +388,15 @@ class LyraTUI:
                 ("5. Back to Main Menu\n", "yellow"),
                 ("\nEnter your choice (1-5): ", "white"),
             )
-            
+
             tools_panel = Panel(tools_text, title="Journal Tools", style="blue")
             self.console.print(tools_panel)
-            
+
             try:
-                choice = Prompt.ask("Choice", choices=["1", "2", "3", "4", "5"], default="5")
-                
+                choice = Prompt.ask(
+                    "Choice", choices=["1", "2", "3", "4", "5"], default="5"
+                )
+
                 if choice == "1":
                     self.ingest_journal_tool()
                 elif choice == "2":
@@ -369,7 +407,7 @@ class LyraTUI:
                     self.export_encrypted_journals()
                 elif choice == "5":
                     break
-                    
+
             except KeyboardInterrupt:
                 break
 
