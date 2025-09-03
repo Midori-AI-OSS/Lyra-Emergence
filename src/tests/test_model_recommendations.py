@@ -35,7 +35,9 @@ class TestModelRecommendations:
         recommended = recommend_model(4.0, 0.0)
         assert recommended is not None
         assert recommended.size_category == "small"
-        assert recommended.min_ram_gb <= 4.0
+        # Should be able to run with quantization (4-bit reduces to ~60% of min_ram_gb)
+        effective_min_ram = recommended.min_ram_gb * 0.6 if "4bit" in recommended.quantization_support else recommended.min_ram_gb
+        assert effective_min_ram <= 4.0
 
     def test_recommend_model_medium_system(self):
         """Test model recommendation for medium system."""

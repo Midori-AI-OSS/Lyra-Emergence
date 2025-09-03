@@ -179,7 +179,14 @@ def recommend_model(
 
     for model in MODEL_DATABASE:
         # Check if we meet minimum requirements
-        if ram_gb >= model.min_ram_gb:
+        # For models with quantization support, reduce RAM requirements by ~40%
+        effective_min_ram = model.min_ram_gb
+        if model.quantization_support and "4bit" in model.quantization_support:
+            effective_min_ram = model.min_ram_gb * 0.6  # 4-bit quantization reduces to ~60% of original
+        elif model.quantization_support and "8bit" in model.quantization_support:
+            effective_min_ram = model.min_ram_gb * 0.8  # 8-bit quantization reduces to ~80% of original
+        
+        if ram_gb >= effective_min_ram:
             # For GPU models, either have enough VRAM or can run with quantization/CPU
             if (
                 vram_gb >= model.min_vram_gb
