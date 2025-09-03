@@ -6,12 +6,14 @@ from pathlib import Path
 
 import pytest
 
+from src.journal.models import JournalEntry
+from src.journal.models import RitualDetails
+from src.journal.models import StewardshipTrace
 from src.journal.encrypted_torch_storage import (
     EncryptedTorchStorage,
     create_encrypted_storage,
     migrate_json_to_encrypted,
 )
-from src.journal.parser import JournalEntry, RitualDetails, StewardshipTrace
 
 
 class TestEncryptedTorchStorage:

@@ -19,6 +19,15 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
+from pydantic import TypeAdapter
+from pydantic import ValidationError
+
+from src.journal.models import GemJournalRecord
+from src.journal.models import JournalEntry
+from src.journal.models import JournalIndexEntry
+from src.journal.models import JournalManifest
+from src.journal.parser import parse_journal
+
 
 class ComprehensiveJSONValidator:
     """Enhanced JSON validation utility for the Lyra-Emergence project."""
@@ -232,6 +241,24 @@ class ComprehensiveJSONValidator:
             best_practice_issues = self._check_best_practices(data, file_path, content)
             for issue in best_practice_issues:
                 self.warnings.append((str(file_path), f"BEST_PRACTICE: {issue}"))
+
+            try:
+                if "gemjournals" in file_path.parts:
+                    if file_path.name == "journal_manifest.json":
+                        JournalManifest.model_validate_json(content)
+                    elif file_path.name == "journal_index.json":
+                        TypeAdapter(list[JournalIndexEntry]).validate_json(content)
+                    else:
+                        try:
+                            TypeAdapter(list[GemJournalRecord]).validate_json(content)
+                        except ValidationError:
+                            GemJournalRecord.model_validate_json(content)
+                elif file_path.parent.name == "journal":
+                    entries = parse_journal(file_path)
+                    for entry in entries:
+                        JournalEntry.model_validate_json(entry.model_dump_json())
+            except ValidationError as e:
+                return False, f"Pydantic validation error: {e}"
 
             return True, None
 

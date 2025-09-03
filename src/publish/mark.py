@@ -14,7 +14,8 @@ def toggle_publish_flag(journal_path: Path, entry_id: str) -> bool:
 
     entries = data if isinstance(data, list) else data.get("entries", [])
     updated = False
-    for entry in entries:
+    for item in entries:
+        entry = item.get("journal_entry", item)
         if str(entry.get("id")) == entry_id:
             entry["publish"] = not bool(entry.get("publish", False))
             updated = True
