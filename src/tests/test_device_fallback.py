@@ -67,7 +67,7 @@ def test_safe_load_model_non_oom_error_reraises() -> None:
 
 
 def test_safe_load_model_device_map_fallback() -> None:
-    """Test that device_map is also set to CPU on fallback."""
+    """Test that device_map is removed on fallback to avoid accelerate requirement."""
     mock_loader = Mock()
     mock_loader.side_effect = [
         torch.cuda.OutOfMemoryError("CUDA out of memory"),
@@ -77,8 +77,40 @@ def test_safe_load_model_device_map_fallback() -> None:
     result = safe_load_model(mock_loader, device_map="auto")
 
     assert result == "model_on_cpu"
-    # Second call should have CPU device_map
-    mock_loader.assert_any_call(device_map="cpu", model_kwargs={"device": "cpu"})
+    # Second call should have device_map removed entirely and CPU device in model_kwargs
+    mock_loader.assert_any_call(model_kwargs={"device": "cpu"})
+
+
+def test_safe_load_model_device_error_fallback() -> None:
+    """Test that device recognition errors fall back by removing device_map."""
+    mock_loader = Mock()
+    mock_loader.side_effect = [
+        ValueError("Device 0 is not recognized"),
+        "model_on_cpu",
+    ]
+
+    result = safe_load_model(mock_loader, device_map="auto")
+
+    assert result == "model_on_cpu"
+    assert mock_loader.call_count == 2
+    # Second call should have device_map removed entirely
+    mock_loader.assert_any_call(model_kwargs={"device": "cpu"})
+
+
+def test_safe_load_model_accelerate_error_fallback() -> None:
+    """Test that accelerate requirement errors fall back by removing device_map."""
+    mock_loader = Mock()
+    mock_loader.side_effect = [
+        ValueError("Using a `device_map` requires `accelerate`"),
+        "model_on_cpu",
+    ]
+
+    result = safe_load_model(mock_loader, device_map="auto")
+
+    assert result == "model_on_cpu"
+    assert mock_loader.call_count == 2
+    # Second call should have device_map removed entirely
+    mock_loader.assert_any_call(model_kwargs={"device": "cpu"})
 
 
 @patch("src.utils.device_fallback.HuggingFaceEmbeddings")

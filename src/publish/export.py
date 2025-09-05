@@ -53,7 +53,7 @@ def main() -> None:
     parser.add_argument(
         "--journal",
         type=Path,
-        default=Path("data/journal/sample.json"),
+        default=Path("data/gemjournals/sample.json"),
         help="Path to the journal JSON file",
     )
     parser.add_argument(

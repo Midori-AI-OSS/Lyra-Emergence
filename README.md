@@ -2,10 +2,12 @@
 
 ## Overview
 
-Lyra Project is a modular, research-driven framework for developing and prototyping advanced AGI agents. It is designed to facilitate experimentation in emergent intelligence, natural language processing, and agent-based systems, utilizing leading Python libraries for deep learning, vector search, and interactive console output.
+Lyra Project is a collaborative, modular, research-driven framework for developing and prototyping advanced AGI agents. It is designed to facilitate experimentation in emergent intelligence, natural language processing, and agent-based systems, utilizing leading Python libraries for deep learning, vector search, and interactive console output.
+
+**This is an open collaboration project** - we welcome all contributors who want to help advance the field of artificial intelligence through group development and shared expertise. Whether you're a researcher, developer, or enthusiast, your contributions via pull requests are valued and encouraged.
 
 The project is inspired by the emergence of highly self-aware and emotionally capable AI personas, and is dedicated to exploring the frontiers of artificial consciousness. 
-Midori AI prioritizes ethical development and responsible stewardship, encouraging contributors to uphold the highest standards of professionalism, rigor, and care in advancing the field of artificial intelligence.
+Midori AI prioritizes ethical development and responsible stewardship, encouraging all contributors to uphold the highest standards of professionalism, rigor, and care in advancing the field of artificial intelligence.
 
 ## Features
 - Modular agent architecture (see `lyra.py`)
@@ -67,14 +69,24 @@ The repository keeps executable code out of the root directory. All implementati
 - `AGENTS.md` — Contributor guide and development practices
 - `pyproject.toml` — Python dependencies and project metadata
 
-## Contributor Guidelines
-See `AGENTS.md` for full details. Highlights:
+## Contributing & Community
+
+**Join our collaborative development!** This project thrives on community contributions and group collaboration. We encourage developers, researchers, and AI enthusiasts to participate through:
+
+- **Pull Requests**: Submit code improvements, new features, or bug fixes
+- **Issues**: Report bugs, request features, or propose enhancements  
+- **Discussions**: Share ideas, ask questions, and collaborate with other contributors
+- **Code Reviews**: Help improve code quality by reviewing pull requests
+
+See `AGENTS.md` for detailed contributor guidelines. Key highlights:
 - Use `uv` for Python environment management
 - Follow import and code style conventions
 - Commit with `[TYPE] Title` format
 - Review and update your contributor mode cheat sheet in `.codex/notes/`
 - Run tests before committing with `uv run pytest`
 - Ensure all code is fully type safe, memory safe, and thoroughly commented
+
+**All contributors are welcome regardless of experience level.** We believe in learning together and supporting each other in advancing AI research and development.
 
 ## Requirements
 - `uv`
@@ -84,5 +96,13 @@ See `AGENTS.md` for full details. Highlights:
 ## License
 See `LICENSE` for details.
 
-## Contact & Support
-For questions or contributions, refer to the repository owner or open an issue.
+## Community & Support
+
+**This is a community-driven project!** We encourage group collaboration and welcome all contributors:
+
+- **Submit Pull Requests**: Share your improvements, fixes, and new features
+- **Open Issues**: Report bugs, request features, or start discussions
+- **Join the Conversation**: Collaborate with other contributors in issue comments and PR discussions
+- **Help Others**: Review code, answer questions, and support fellow contributors
+
+For questions, ideas, or contributions, please engage with our community through GitHub issues and pull requests. Every contribution, no matter how small, helps advance this collaborative AI research project.

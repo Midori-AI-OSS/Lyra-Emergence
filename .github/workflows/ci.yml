@@ -25,7 +25,13 @@ jobs:
     
     - name: Validate JSON files in data directory
       run: |
-        python scripts/validate_json.py data/
+        set -o pipefail
+        PYTHONPATH=. uv run python scripts/validate_json.py data/ | tee json.log
+
+    - name: Append JSON validation summary
+      run: |
+        echo '### JSON Validation Summary' >> "$GITHUB_STEP_SUMMARY"
+        cat json.log >> "$GITHUB_STEP_SUMMARY"
 
   python-lint-and-test:
     name: Python Linting and Testing
@@ -51,20 +57,55 @@ jobs:
         uv add --dev ruff black isort mypy
     
     - name: Run ruff linting
-      run: uv run ruff check . --fix || echo "⚠️ Ruff found issues (non-blocking)"
-    
+      run: |
+        set -o pipefail
+        uv run ruff check . --fix | tee ruff.log
+
+    - name: Append ruff lint summary
+      run: |
+        echo '### Ruff Lint Summary' >> "$GITHUB_STEP_SUMMARY"
+        cat ruff.log >> "$GITHUB_STEP_SUMMARY"
+
     - name: Run black formatting check
-      run: uv run black --check . || echo "⚠️ Black formatting issues found (non-blocking)"
-    
+      run: |
+        set -o pipefail
+        uv run black --check . | tee black.log
+
+    - name: Append black formatting summary
+      run: |
+        echo '### Black Formatting Summary' >> "$GITHUB_STEP_SUMMARY"
+        cat black.log >> "$GITHUB_STEP_SUMMARY"
+
     - name: Run isort import sorting check
-      run: uv run isort --check-only . || echo "⚠️ Import sorting issues found (non-blocking)"
-    
+      run: |
+        set -o pipefail
+        uv run isort --check-only . | tee isort.log
+
+    - name: Append isort summary
+      run: |
+        echo '### isort Summary' >> "$GITHUB_STEP_SUMMARY"
+        cat isort.log >> "$GITHUB_STEP_SUMMARY"
+
     - name: Run mypy type checking
-      run: uv run mypy src/ --ignore-missing-imports || echo "⚠️ MyPy found type issues (non-blocking)"
+      run: |
+        set -o pipefail
+        uv run mypy src/ --ignore-missing-imports | tee mypy.log
+
+    - name: Append mypy summary
+      run: |
+        echo '### MyPy Type Check Summary' >> "$GITHUB_STEP_SUMMARY"
+        cat mypy.log >> "$GITHUB_STEP_SUMMARY"
     
     - name: Run tests with pytest
-      run: uv run pytest -v
+      run: |
+        set -o pipefail
+        uv run pytest -v 2>&1 | tee pytest.log
       env:
         # Set environment variables for offline testing
         TRANSFORMERS_OFFLINE: 1
         HF_HUB_OFFLINE: 1
+    - name: Publish test summary
+      if: always()
+      run: |
+        echo '### Pytest Summary' >> $GITHUB_STEP_SUMMARY
+        tail -n 50 pytest.log >> $GITHUB_STEP_SUMMARY

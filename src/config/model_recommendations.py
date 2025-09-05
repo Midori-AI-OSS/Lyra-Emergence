@@ -38,52 +38,16 @@ MODEL_DATABASE: list[ModelInfo] = [
         license="Apache 2.0",
     ),
     ModelInfo(
-        model_id="meta-llama/Llama-3.2-3B-Instruct",
+        model_id="deepseek-ai/DeepSeek-R1-0528-Qwen3-8B",
         size_category="small",
-        parameter_count="3B",
-        min_ram_gb=4.0,
-        min_vram_gb=2.0,
-        recommended_ram_gb=8.0,
-        recommended_vram_gb=4.0,
-        quantization_support=["8bit", "4bit"],
-        description="Meta's latest small instruction-tuned model with strong performance (2024)",
-        license="Llama 3.2",
-    ),
-    ModelInfo(
-        model_id="microsoft/Phi-3.5-mini-instruct",
-        size_category="small",
-        parameter_count="3.8B",
-        min_ram_gb=4.0,
-        min_vram_gb=2.5,
-        recommended_ram_gb=8.0,
-        recommended_vram_gb=5.0,
-        quantization_support=["8bit", "4bit"],
-        description="Microsoft's latest efficient small model with excellent reasoning (2024)",
-        license="MIT",
-    ),
-    ModelInfo(
-        model_id="google/gemma-2-9b-it",
-        size_category="small",
-        parameter_count="9B",
+        parameter_count="8B",
         min_ram_gb=8.0,
         min_vram_gb=5.0,
         recommended_ram_gb=16.0,
         recommended_vram_gb=10.0,
         quantization_support=["8bit", "4bit"],
-        description="Google's latest Gemma 2 instruction-tuned model with strong capabilities (2024)",
-        license="Gemma",
-    ),
-    ModelInfo(
-        model_id="HuggingFaceTB/SmolLM-1.7B-Instruct",
-        size_category="small",
-        parameter_count="1.7B",
-        min_ram_gb=2.0,
-        min_vram_gb=1.0,
-        recommended_ram_gb=4.0,
-        recommended_vram_gb=2.0,
-        quantization_support=["8bit", "4bit"],
-        description="HuggingFace's efficient small model optimized for resource-constrained environments (2024)",
-        license="Apache 2.0",
+        description="Unknown, needs updating",
+        license="???",
     ),
     # Medium models (10B - 32B parameters) - 2024/2025 latest models
     ModelInfo(
@@ -97,18 +61,6 @@ MODEL_DATABASE: list[ModelInfo] = [
         quantization_support=["8bit", "4bit"],
         description="Top-tier 14B model with exceptional reasoning and coding capabilities (2024)",
         license="Apache 2.0",
-    ),
-    ModelInfo(
-        model_id="meta-llama/Meta-Llama-3.1-8B-Instruct",
-        size_category="medium",
-        parameter_count="8B",
-        min_ram_gb=8.0,
-        min_vram_gb=4.0,
-        recommended_ram_gb=16.0,
-        recommended_vram_gb=8.0,
-        quantization_support=["8bit", "4bit"],
-        description="Meta's latest 8B model with 128k context and strong performance (2024)",
-        license="Llama 3.1",
     ),
     ModelInfo(
         model_id="mistralai/Mistral-Nemo-Instruct-2407",
@@ -147,18 +99,6 @@ MODEL_DATABASE: list[ModelInfo] = [
         license="Apache 2.0",
     ),
     # Large models (33B+ parameters) - 2024/2025 latest models
-    ModelInfo(
-        model_id="meta-llama/Meta-Llama-3.1-70B-Instruct",
-        size_category="large",
-        parameter_count="70B",
-        min_ram_gb=64.0,
-        min_vram_gb=32.0,
-        recommended_ram_gb=128.0,
-        recommended_vram_gb=64.0,
-        quantization_support=["8bit", "4bit"],
-        description="Meta's flagship 70B model with 128k context and exceptional capabilities (2024)",
-        license="Llama 3.1",
-    ),
     ModelInfo(
         model_id="Qwen/Qwen2.5-72B-Instruct",
         size_category="large",
@@ -239,7 +179,14 @@ def recommend_model(
 
     for model in MODEL_DATABASE:
         # Check if we meet minimum requirements
-        if ram_gb >= model.min_ram_gb:
+        # For models with quantization support, reduce RAM requirements by ~40%
+        effective_min_ram = model.min_ram_gb
+        if model.quantization_support and "4bit" in model.quantization_support:
+            effective_min_ram = model.min_ram_gb * 0.6  # 4-bit quantization reduces to ~60% of original
+        elif model.quantization_support and "8bit" in model.quantization_support:
+            effective_min_ram = model.min_ram_gb * 0.8  # 8-bit quantization reduces to ~80% of original
+        
+        if ram_gb >= effective_min_ram:
             # For GPU models, either have enough VRAM or can run with quantization/CPU
             if (
                 vram_gb >= model.min_vram_gb
