@@ -10,3 +10,8 @@ When adding or updating tools, review LangChain's official tool integration guid
 <https://python.langchain.com/docs/integrations/tools/>
 
 Update this document whenever new tools are introduced or existing ones are modified.
+
+## 2025-09-05
+
+- `JournalIngestTool` and `JournalSearchTool` now accept variadic arguments in
+  their `_run` and `_arun` methods to match `BaseTool`'s expected signature.
