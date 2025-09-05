@@ -1,14 +1,14 @@
 """Command-line chat interface for Lyra."""
 
-from collections.abc import Callable, Iterator
 from typing import Generator
+from collections.abc import Callable
 
 from flashrank import Ranker
-from langchain_core.language_models import BaseLanguageModel
-from langchain_core.prompts import ChatPromptTemplate
-from rich.console import Console
 from rich.live import Live
 from rich.text import Text
+from rich.console import Console
+from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.language_models import BaseLanguageModel
 
 from src.rerank.cpu_reranker import rerank_entries
 from src.utils.chat_templates import AutoChatTemplateManager

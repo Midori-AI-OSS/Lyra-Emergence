@@ -12,13 +12,15 @@ from rich.console import Console
 from langchain_core.language_models import BaseLanguageModel
 
 from src.cli.chat import ChatSession
-from src.config.model_config import load_config
-from src.config.model_recommendations import MODEL_DATABASE, get_models_by_category
-from src.publish.mark import toggle_publish_flag
-from src.utils.device_fallback import safe_load_pipeline
 from src.utils.env_check import get_env_status
-from src.utils.system_info import get_available_memory, get_memory_tier
+from src.config.model_config import load_config
+from src.publish.mark import toggle_publish_flag
+from src.utils.system_info import get_memory_tier
 from src.vectorstore.chroma import ingest_journal
+from src.utils.system_info import get_available_memory
+from src.utils.device_fallback import safe_load_pipeline
+from src.config.model_recommendations import MODEL_DATABASE
+from src.config.model_recommendations import get_models_by_category
 
 
 class LyraTUI:
