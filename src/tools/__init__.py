@@ -56,29 +56,27 @@ def get_tools(env: EnvStatus | None = None) -> list[BaseTool]:
     if env_status.network_tools_enabled:
         tools.extend([JournalIngestTool(), JournalSearchTool()])
     
-    # Add MCP tools if network is available
+    # Add MCP tools if network is available (using LangChain patterns)
     if env_status.network_tools_enabled:
         try:
             from src.tools.mcp_tools import get_mcp_tools
             tools.extend(get_mcp_tools())
-            logger.info("MCP tools added successfully")
+            logger.info("MCP tools added using LangChain patterns")
         except ImportError as e:
             logger.warning("MCP tools not available: %s", e)
         except Exception as e:
             logger.error("Error loading MCP tools: %s", e)
     
-    # Add Playwright tools if they are available and we have network access
+    # Add Playwright tools if they are available and we have network access (using LangChain toolkit)
     if env_status.network_tools_enabled:
         try:
-            # Check if Playwright is properly installed
-            import playwright
             from src.tools.playwright_tools import get_playwright_tools
             tools.extend(get_playwright_tools())
-            logger.info("Playwright tools added successfully")
+            logger.info("LangChain Playwright toolkit added successfully")
         except ImportError as e:
-            logger.warning("Playwright tools not available: %s", e)
+            logger.warning("Playwright toolkit not available: %s", e)
         except Exception as e:
-            logger.error("Error loading Playwright tools: %s", e)
+            logger.error("Error loading Playwright toolkit: %s", e)
     
     return tools
 
