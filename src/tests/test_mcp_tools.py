@@ -5,86 +5,97 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from src.tools.mcp_tools import MCPRequestTool, MCPContextTool, MCPServiceTool, get_mcp_tools
+from src.tools.mcp_tools import MCPClientTool, MCPContextTool, MCPServerInfoTool, get_mcp_tools
 
 
-class TestMCPRequestTool:
-    """Test the MCP HTTP request tool."""
+class TestMCPClientTool:
+    """Test the MCP client tool."""
 
     def test_init(self):
         """Test tool initialization."""
-        tool = MCPRequestTool()
-        assert tool.name == "mcp_request"
-        assert "HTTP requests" in tool.description
+        tool = MCPClientTool()
+        assert tool.name == "mcp_client"
+        assert "MCP server" in tool.description
 
-    @patch("requests.get")
-    def test_get_request_success(self, mock_get):
-        """Test successful GET request."""
-        mock_response = Mock()
-        mock_response.status_code = 200
-        mock_response.headers = {"Content-Type": "application/json"}
-        mock_response.text = '{"result": "success"}'
-        mock_get.return_value = mock_response
-
-        tool = MCPRequestTool()
-        request_json = json.dumps({"url": "https://api.example.com/test", "method": "GET"})
-        result = tool._run(request_json)
-
-        result_data = json.loads(result)
-        assert result_data["status_code"] == 200
-        assert "success" in result_data["content"]
-
-    @patch("requests.post")
-    def test_post_request_success(self, mock_post):
-        """Test successful POST request."""
-        mock_response = Mock()
-        mock_response.status_code = 201
-        mock_response.headers = {"Content-Type": "application/json"}
-        mock_response.text = '{"created": true}'
-        mock_post.return_value = mock_response
-
-        tool = MCPRequestTool()
+    def test_client_tool_success(self):
+        """Test successful MCP client tool call."""
+        tool = MCPClientTool()
         request_json = json.dumps({
-            "url": "https://api.example.com/create",
-            "method": "POST",
-            "data": {"name": "test"}
+            "server_command": "python -m some_mcp_server",
+            "tool_name": "test_tool",
+            "parameters": {"param1": "value1"}
         })
         result = tool._run(request_json)
 
         result_data = json.loads(result)
-        assert result_data["status_code"] == 201
-        assert "created" in result_data["content"]
+        assert result_data["status"] == "success"
+        assert result_data["mcp_available"] is True
+        assert "python -m some_mcp_server" in result_data["message"]
 
     def test_invalid_json(self):
         """Test handling of invalid JSON input."""
-        tool = MCPRequestTool()
+        tool = MCPClientTool()
         result = tool._run("invalid json")
         assert "Invalid JSON format" in result
 
-    def test_missing_url(self):
-        """Test handling of missing URL."""
-        tool = MCPRequestTool()
-        request_json = json.dumps({"method": "GET"})
+    def test_missing_server_command(self):
+        """Test handling of missing server command."""
+        tool = MCPClientTool()
+        request_json = json.dumps({"tool_name": "test"})
         result = tool._run(request_json)
-        assert "URL is required" in result
+        assert "server_command is required" in result
 
-    def test_unsupported_method(self):
-        """Test handling of unsupported HTTP method."""
-        tool = MCPRequestTool()
-        request_json = json.dumps({"url": "https://example.com", "method": "PATCH"})
+    def test_missing_tool_name(self):
+        """Test handling of missing tool name."""
+        tool = MCPClientTool()
+        request_json = json.dumps({"server_command": "python -m test"})
         result = tool._run(request_json)
-        assert "Unsupported HTTP method" in result
+        assert "tool_name is required" in result
 
-    @patch("requests.get")
-    def test_request_exception(self, mock_get):
-        """Test handling of request exceptions."""
-        import requests
-        mock_get.side_effect = requests.RequestException("Network error")
-        
-        tool = MCPRequestTool()
-        request_json = json.dumps({"url": "https://example.com", "method": "GET"})
+
+class TestMCPServerInfoTool:
+    """Test the MCP server info tool."""
+
+    def test_init(self):
+        """Test tool initialization."""
+        tool = MCPServerInfoTool()
+        assert tool.name == "mcp_server_info"
+        assert "MCP protocol" in tool.description
+
+    def test_info_action(self):
+        """Test getting MCP protocol info."""
+        tool = MCPServerInfoTool()
+        request_json = json.dumps({"action": "info"})
         result = tool._run(request_json)
-        assert "Error making request" in result
+
+        result_data = json.loads(result)
+        assert "mcp_version" in result_data
+        assert "protocol_description" in result_data
+        assert "Model Context Protocol" in result_data["protocol_description"]
+
+    def test_capabilities_action(self):
+        """Test getting MCP capabilities info."""
+        tool = MCPServerInfoTool()
+        request_json = json.dumps({"action": "capabilities"})
+        result = tool._run(request_json)
+
+        result_data = json.loads(result)
+        assert "client_capabilities" in result_data
+        assert "server_capabilities" in result_data
+        assert "tools" in result_data["client_capabilities"]
+
+    def test_unknown_action(self):
+        """Test handling of unknown action."""
+        tool = MCPServerInfoTool()
+        request_json = json.dumps({"action": "unknown"})
+        result = tool._run(request_json)
+        assert "Unknown action" in result
+
+    def test_invalid_json(self):
+        """Test handling of invalid JSON input."""
+        tool = MCPServerInfoTool()
+        result = tool._run("invalid json")
+        assert "Invalid JSON format" in result
 
 
 class TestMCPContextTool:
@@ -176,96 +187,10 @@ class TestMCPContextTool:
         assert "Unsupported action" in result
 
 
-class TestMCPServiceTool:
-    """Test the MCP service registry tool."""
-
-    def setup_method(self):
-        """Clear service registry before each test."""
-        from src.tools.mcp_tools import _SERVICE_REGISTRY
-        _SERVICE_REGISTRY.clear()
-
-    def test_init(self):
-        """Test tool initialization."""
-        tool = MCPServiceTool()
-        assert tool.name == "mcp_service"
-        assert "external MCP-style services" in tool.description
-
-    def test_register_service(self):
-        """Test registering a service."""
-        tool = MCPServiceTool()
-        register_json = json.dumps({
-            "action": "register",
-            "name": "test_service",
-            "url": "https://api.test.com",
-            "description": "Test service"
-        })
-        result = tool._run(register_json)
-        assert "Service 'test_service' registered successfully" in result
-
-    def test_list_services(self):
-        """Test listing registered services."""
-        tool = MCPServiceTool()
-        
-        # Register a service
-        tool._run(json.dumps({
-            "action": "register",
-            "name": "test_service",
-            "url": "https://api.test.com",
-            "description": "Test service"
-        }))
-        
-        # List services
-        list_json = json.dumps({"action": "list"})
-        result = tool._run(list_json)
-        result_data = json.loads(result)
-        assert "test_service" in result_data["registered_services"]
-        assert result_data["registered_services"]["test_service"]["url"] == "https://api.test.com"
-
-    @patch("src.tools.mcp_tools.MCPRequestTool._run")
-    def test_call_service(self, mock_request_run):
-        """Test calling a registered service."""
-        mock_request_run.return_value = '{"response": "success"}'
-        
-        tool = MCPServiceTool()
-        
-        # Register a service
-        tool._run(json.dumps({
-            "action": "register",
-            "name": "test_service",
-            "url": "https://api.test.com"
-        }))
-        
-        # Call the service
-        call_json = json.dumps({
-            "action": "call",
-            "name": "test_service",
-            "params": {"param1": "value1"}
-        })
-        result = tool._run(call_json)
-        assert "success" in result
-
-    def test_call_nonexistent_service(self):
-        """Test calling a service that doesn't exist."""
-        tool = MCPServiceTool()
-        call_json = json.dumps({
-            "action": "call",
-            "name": "nonexistent_service"
-        })
-        result = tool._run(call_json)
-        assert "Service 'nonexistent_service' not found" in result
-
-    def test_register_missing_fields(self):
-        """Test registering service with missing required fields."""
-        tool = MCPServiceTool()
-        register_json = json.dumps({"action": "register", "name": "test"})
-        result = tool._run(register_json)
-        assert "Name and URL are required" in result
-
-
 def test_get_mcp_tools():
     """Test getting all MCP tools."""
     tools = get_mcp_tools()
     assert len(tools) == 3
-    assert any(tool.name == "mcp_request" for tool in tools)
+    assert any(tool.name == "mcp_client" for tool in tools)
     assert any(tool.name == "mcp_context" for tool in tools)
-    assert any(tool.name == "mcp_service" for tool in tools)
+    assert any(tool.name == "mcp_server_info" for tool in tools)

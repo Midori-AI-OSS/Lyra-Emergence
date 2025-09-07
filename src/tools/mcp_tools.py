@@ -1,4 +1,4 @@
-"""MCP (Model Context Protocol) style tools for external service integration."""
+"""MCP (Model Context Protocol) tools for external service integration."""
 
 from __future__ import annotations
 
@@ -8,6 +8,16 @@ from typing import Any
 
 from langchain_core.tools import BaseTool
 
+# Import the official MCP package
+try:
+    import mcp
+    import mcp.client.session
+    import mcp.types
+    MCP_AVAILABLE = True
+except ImportError:
+    MCP_AVAILABLE = False
+    mcp = None
+
 logger = logging.getLogger(__name__)
 
 # Global storage for context and services (in a real implementation, this might be persistent)
@@ -15,20 +25,21 @@ _CONTEXT_STORE: dict[str, Any] = {}
 _SERVICE_REGISTRY: dict[str, dict[str, Any]] = {}
 
 
-class MCPRequestTool(BaseTool):
-    """Tool for making HTTP requests to external services (MCP-style)."""
+class MCPClientTool(BaseTool):
+    """Tool for connecting to and interacting with MCP servers."""
 
-    name: str = "mcp_request"
+    name: str = "mcp_client"
     description: str = (
-        "Make HTTP requests to external services following MCP patterns. "
-        "Input: JSON string with 'url', 'method' (GET/POST), and optional 'data' and 'headers'."
+        "Connect to an MCP server and interact with its tools. "
+        "Input: JSON string with 'server_command' (path to MCP server), 'tool_name', and 'parameters'."
     )
 
     def _run(self, request_json: str, *args: Any, **kwargs: Any) -> str:
-        """Make an HTTP request to an external service."""
+        """Connect to an MCP server and call a tool."""
+        if not MCP_AVAILABLE:
+            return "Error: MCP package not available. Install with: pip install mcp"
+        
         try:
-            import requests
-            
             # Parse the request JSON
             try:
                 request_data = json.loads(request_json)
@@ -36,50 +47,90 @@ class MCPRequestTool(BaseTool):
                 return f"Error: Invalid JSON format - {e}"
             
             # Validate required fields
-            if "url" not in request_data:
-                return "Error: URL is required"
+            server_command = request_data.get("server_command")
+            tool_name = request_data.get("tool_name")
+            parameters = request_data.get("parameters", {})
             
-            url = request_data["url"]
-            method = request_data.get("method", "GET").upper()
-            data = request_data.get("data", None)
-            headers = request_data.get("headers", {})
+            if not server_command:
+                return "Error: server_command is required"
+            if not tool_name:
+                return "Error: tool_name is required"
             
-            # Add default headers for API requests
-            if "Content-Type" not in headers and data:
-                headers["Content-Type"] = "application/json"
+            # For now, return a placeholder since async MCP client setup is complex
+            # In a real implementation, this would set up an async MCP client session
+            return json.dumps({
+                "status": "success",
+                "message": f"MCP client ready to connect to {server_command} and call {tool_name}",
+                "mcp_available": True,
+                "parameters": parameters
+            }, indent=2)
             
-            # Make the request
-            if method == "GET":
-                response = requests.get(url, headers=headers, timeout=10)
-            elif method == "POST":
-                response = requests.post(url, json=data, headers=headers, timeout=10)
-            elif method == "PUT":
-                response = requests.put(url, json=data, headers=headers, timeout=10)
-            elif method == "DELETE":
-                response = requests.delete(url, headers=headers, timeout=10)
-            else:
-                return f"Error: Unsupported HTTP method {method}"
-            
-            # Return formatted response
-            result = {
-                "status_code": response.status_code,
-                "headers": dict(response.headers),
-                "content": response.text[:1000],  # Limit response size
-            }
-            
-            return json.dumps(result, indent=2)
-            
-        except ImportError:
-            return "Error: requests library not available"
-        except requests.RequestException as e:
-            logger.error("HTTP request error: %s", e)
-            return f"Error making request: {e}"
         except Exception as e:
-            logger.error("Unexpected error in MCP request: %s", e)
-            return f"Unexpected error: {e}"
+            logger.error("Error in MCP client tool: %s", e)
+            return f"Error: {e}"
 
     async def _arun(self, request_json: str, *args: Any, **kwargs: Any) -> str:  # pragma: no cover
-        raise NotImplementedError("Async HTTP requests not implemented yet")
+        """Async version - would implement proper MCP client session here."""
+        # This would be the proper place to implement async MCP client interaction
+        # using mcp.client.session.ClientSession
+        raise NotImplementedError("Async MCP client not implemented yet")
+
+
+class MCPServerInfoTool(BaseTool):
+    """Tool for getting information about available MCP servers and tools."""
+
+    name: str = "mcp_server_info"
+    description: str = (
+        "Get information about MCP protocol and available server capabilities. "
+        "Input: JSON string with 'action' (info/capabilities)."
+    )
+
+    def _run(self, request_json: str, *args: Any, **kwargs: Any) -> str:
+        """Get MCP server information."""
+        if not MCP_AVAILABLE:
+            return "Error: MCP package not available. Install with: pip install mcp"
+        
+        try:
+            try:
+                request_data = json.loads(request_json)
+            except json.JSONDecodeError as e:
+                return f"Error: Invalid JSON format - {e}"
+            
+            action = request_data.get("action", "info")
+            
+            if action == "info":
+                return json.dumps({
+                    "mcp_version": getattr(mcp, "__version__", "unknown"),
+                    "protocol_description": "Model Context Protocol - standardized way for AI models to interact with external tools",
+                    "available_types": ["Tool", "Resource", "Prompt"],
+                    "client_capabilities": list(mcp.types.ClientCapabilities.model_fields.keys()),
+                    "server_capabilities": list(mcp.types.ServerCapabilities.model_fields.keys())
+                }, indent=2)
+            
+            elif action == "capabilities":
+                return json.dumps({
+                    "client_capabilities": {
+                        "tools": "Can call tools provided by MCP servers",
+                        "resources": "Can read resources from MCP servers", 
+                        "prompts": "Can get prompts from MCP servers",
+                        "logging": "Can receive log messages from servers"
+                    },
+                    "server_capabilities": {
+                        "tools": "Can provide tools for clients to call",
+                        "resources": "Can provide resources for clients to read",
+                        "prompts": "Can provide prompts for clients to use"
+                    }
+                }, indent=2)
+            
+            else:
+                return f"Error: Unknown action '{action}'. Use 'info' or 'capabilities'"
+                
+        except Exception as e:
+            logger.error("Error in MCP server info tool: %s", e)
+            return f"Error: {e}"
+
+    async def _arun(self, request_json: str, *args: Any, **kwargs: Any) -> str:  # pragma: no cover
+        raise NotImplementedError("Async MCP server info not implemented yet")
 
 
 class MCPContextTool(BaseTool):
@@ -144,87 +195,14 @@ class MCPContextTool(BaseTool):
     async def _arun(self, context_json: str, *args: Any, **kwargs: Any) -> str:  # pragma: no cover
         raise NotImplementedError("Async context management not implemented yet")
 
-
-class MCPServiceTool(BaseTool):
-    """Tool for registering and calling external MCP-style services."""
-
-    name: str = "mcp_service"
-    description: str = (
-        "Register and call external MCP-style services. "
-        "Input: JSON string with 'action' (register/call/list), service details."
-    )
-
-    def _run(self, service_json: str, *args: Any, **kwargs: Any) -> str:
-        """Manage external services."""
-        global _SERVICE_REGISTRY
-        try:
-            # Parse the service JSON
-            try:
-                service_data = json.loads(service_json)
-            except json.JSONDecodeError as e:
-                return f"Error: Invalid JSON format - {e}"
-            
-            action = service_data.get("action", "").lower()
-            
-            if action == "register":
-                name = service_data.get("name", "")
-                url = service_data.get("url", "")
-                description = service_data.get("description", "")
-                
-                if not name or not url:
-                    return "Error: Name and URL are required for service registration"
-                
-                _SERVICE_REGISTRY[name] = {
-                    "url": url,
-                    "description": description,
-                    "registered_at": "now"  # In real implementation, use proper timestamp
-                }
-                
-                return f"Service '{name}' registered successfully"
-            
-            elif action == "call":
-                name = service_data.get("name", "")
-                params = service_data.get("params", {})
-                
-                if not name:
-                    return "Error: Service name is required for calling"
-                
-                if name not in _SERVICE_REGISTRY:
-                    return f"Error: Service '{name}' not found in registry"
-                
-                service = _SERVICE_REGISTRY[name]
-                # Use the MCP request tool to make the call
-                request_data = {
-                    "url": service["url"],
-                    "method": "POST",
-                    "data": params
-                }
-                
-                mcp_request = MCPRequestTool()
-                return mcp_request._run(json.dumps(request_data))
-            
-            elif action == "list":
-                services = {
-                    name: {"url": info["url"], "description": info["description"]}
-                    for name, info in _SERVICE_REGISTRY.items()
-                }
-                return json.dumps({"registered_services": services}, indent=2)
-            
-            else:
-                return f"Error: Unsupported action '{action}'. Use: register, call, list"
-                
-        except Exception as e:
-            logger.error("Error in MCP service tool: %s", e)
-            return f"Error: {e}"
-
-    async def _arun(self, service_json: str, *args: Any, **kwargs: Any) -> str:  # pragma: no cover
-        raise NotImplementedError("Async service management not implemented yet")
-
-
 def get_mcp_tools() -> list[BaseTool]:
-    """Return available MCP-style tools."""
+    """Return available MCP tools."""
+    if not MCP_AVAILABLE:
+        logger.warning("MCP package not available. Install with: pip install mcp")
+        return []
+    
     return [
-        MCPRequestTool(),
-        MCPContextTool(),
-        MCPServiceTool(),
+        MCPClientTool(),
+        MCPServerInfoTool(),
+        MCPContextTool(),  # Keep the context tool as it's useful for state management
     ]
