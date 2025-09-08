@@ -7,9 +7,6 @@
 Install required tools and dependencies:
 
 ```bash
-# Install uv (Python package manager) - REQUIRED
-pip install uv
-
 # Install project dependencies - takes ~6 minutes to download all ML packages
 # NEVER CANCEL: Set timeout to 10+ minutes
 uv sync
