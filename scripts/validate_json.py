@@ -34,13 +34,22 @@ class ComprehensiveJSONValidator:
 
     def __init__(self, directory: str):
         """Initialize validator with target directory."""
-        self.directory = Path(directory)
+        resolved_directory = Path(directory).resolve()
+        repository_root = Path(__file__).resolve().parent.parent
+        try:
+            resolved_directory.relative_to(repository_root)
+        except ValueError as exc:
+            raise ValueError(
+                f"Directory '{resolved_directory}' is outside of repository root '{repository_root}'"
+            ) from exc
+
+        self.directory = resolved_directory
         self.errors: List[Tuple[str, str]] = []
         self.warnings: List[Tuple[str, str]] = []
         self.valid_files: List[str] = []
         self.schemas_dir = self.directory / "Schemas"
         self.schemas: Dict[str, Dict[str, Any]] = {}
-        
+
         # Load schemas if available
         self._load_schemas()
 
@@ -370,7 +379,7 @@ def main():
     validator = ComprehensiveJSONValidator(directory)
 
     print("🔍 Starting comprehensive JSON validation...")
-    print(f"📁 Target directory: {directory}")
+    print(f"📁 Target directory: {validator.directory}")
     print()
     
     is_valid = validator.validate_directory()
