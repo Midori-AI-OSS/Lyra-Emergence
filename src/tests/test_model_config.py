@@ -5,6 +5,8 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import Mock, patch
 
+import pytest
+
 from src.config.model_config import ModelConfig, load_config, save_config
 from src.utils.device_fallback import (
     _create_progressive_device_map,
@@ -62,26 +64,33 @@ class TestConfigLoading:
     def test_load_config_default(self) -> None:
         """Test loading default config when no file exists."""
         with TemporaryDirectory() as temp_dir:
-            # Change to temp dir so no config files are found
-            with patch("src.config.model_config.Path") as mock_path:
-                mock_path.return_value.exists.return_value = False
+            allowed_dir = Path(temp_dir).resolve()
+            with patch(
+                "src.config.model_config.APPROVED_CONFIG_DIRS",
+                [allowed_dir],
+            ):
                 config = load_config()
                 assert config.model_id == "Qwen/Qwen2.5-7B-Instruct"
 
     def test_load_config_from_file(self) -> None:
         """Test loading config from JSON file."""
         with TemporaryDirectory() as temp_dir:
-            config_path = Path(temp_dir) / "test_config.json"
+            allowed_dir = Path(temp_dir).resolve()
+            config_path = allowed_dir / "test_config.json"
             config_data = {
                 "model_id": "test/model",
                 "device_map": "auto",
                 "gpu_layers_fallback": 20,
             }
 
-            with open(config_path, "w") as f:
+            with open(config_path, "w", encoding="utf-8") as f:
                 json.dump(config_data, f)
 
-            config = load_config(config_path)
+            with patch(
+                "src.config.model_config.APPROVED_CONFIG_DIRS",
+                [allowed_dir],
+            ):
+                config = load_config(config_path)
             assert config.model_id == "test/model"
             assert config.device_map == "auto"
             assert config.gpu_layers_fallback == 20
@@ -89,21 +98,38 @@ class TestConfigLoading:
     def test_save_config(self) -> None:
         """Test saving config to file."""
         with TemporaryDirectory() as temp_dir:
-            config_path = Path(temp_dir) / "test_config.json"
+            allowed_dir = Path(temp_dir).resolve()
+            config_path = allowed_dir / "test_config.json"
             config = ModelConfig(
                 model_id="test/model", device_map="auto", gpu_layers_fallback=16
             )
 
-            save_config(config, config_path)
+            with patch(
+                "src.config.model_config.APPROVED_CONFIG_DIRS",
+                [allowed_dir],
+            ):
+                save_config(config, config_path)
 
             # Verify file was created and contents are correct
             assert config_path.exists()
-            with open(config_path) as f:
+            with open(config_path, encoding="utf-8") as f:
                 saved_data = json.load(f)
 
             assert saved_data["model_id"] == "test/model"
             assert saved_data["device_map"] == "auto"
             assert saved_data["gpu_layers_fallback"] == 16
+
+    def test_load_config_rejects_parent_escape(self) -> None:
+        """Paths that escape approved directories should raise an error."""
+
+        with pytest.raises(ValueError):
+            load_config(Path("../secret.json"))
+
+    def test_save_config_rejects_parent_escape(self) -> None:
+        """Saving to escaped paths should raise an error before writing."""
+
+        with pytest.raises(ValueError):
+            save_config(ModelConfig(), Path("../secret.json"))
 
 
 class TestProgressiveDeviceMap:

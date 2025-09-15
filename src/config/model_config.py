@@ -12,6 +12,43 @@ from src.utils.system_info import detect_optimal_memory_config, get_available_me
 logger = logging.getLogger(__name__)
 
 
+REPO_ROOT = Path(__file__).resolve().parents[2]
+APPROVED_CONFIG_DIRS = [
+    (REPO_ROOT / "config").resolve(),
+    (REPO_ROOT / "data").resolve(),
+]
+DEFAULT_CONFIG_FILENAMES = ("model_config.json",)
+
+
+def _path_is_within_allowed_directory(path: Path) -> bool:
+    """Check whether the path is inside one of the approved directories."""
+
+    for allowed_dir in APPROVED_CONFIG_DIRS:
+        allowed_dir = allowed_dir.resolve(strict=False)
+        try:
+            path.relative_to(allowed_dir)
+            return True
+        except ValueError:
+            continue
+
+    return False
+
+
+def _resolve_and_validate_config_path(config_path: Path) -> Path:
+    """Resolve and validate that a config path stays within approved directories."""
+
+    resolved_path = config_path.expanduser().resolve(strict=False)
+
+    if not _path_is_within_allowed_directory(resolved_path):
+        allowed_dirs = ", ".join(str(directory) for directory in APPROVED_CONFIG_DIRS)
+        raise ValueError(
+            "Config path escapes approved directories. "
+            f"Resolved path: {resolved_path}. Approved directories: {allowed_dirs}"
+        )
+
+    return resolved_path
+
+
 @dataclass
 class ModelConfig:
     """Configuration class for HuggingFace model loading parameters.
@@ -88,33 +125,37 @@ def load_config(
     Returns:
         ModelConfig instance with loaded or default configuration
     """
-    if config_path is None:
-        # Look for default config file locations
-        possible_paths = [
-            Path("config/model_config.json"),
-            Path("data/model_config.json"),
-            Path("model_config.json"),
-        ]
+    resolved_config_path: Path | None = None
 
-        for path in possible_paths:
-            if path.exists():
-                config_path = path
+    if config_path is None:
+        # Look for default config file locations within approved directories
+        for directory in APPROVED_CONFIG_DIRS:
+            for filename in DEFAULT_CONFIG_FILENAMES:
+                candidate_path = directory / filename
+                if candidate_path.exists():
+                    resolved_config_path = _resolve_and_validate_config_path(
+                        candidate_path
+                    )
+                    break
+            if resolved_config_path:
                 break
+    else:
+        resolved_config_path = _resolve_and_validate_config_path(config_path)
 
     base_config = ModelConfig()
 
     # Load from file if available
-    if config_path and config_path.exists():
+    if resolved_config_path and resolved_config_path.exists():
         try:
-            with open(config_path, encoding="utf-8") as f:
+            with open(resolved_config_path, encoding="utf-8") as f:
                 config_data = json.load(f)
 
-            logger.info(f"Loaded model configuration from {config_path}")
+            logger.info(f"Loaded model configuration from {resolved_config_path}")
             base_config = ModelConfig(**config_data)
 
         except Exception as e:
             logger.warning(
-                f"Failed to load config from {config_path}: {e}. Using defaults."
+                f"Failed to load config from {resolved_config_path}: {e}. Using defaults."
             )
 
     # Auto-select model if requested
@@ -173,12 +214,14 @@ def save_config(config: ModelConfig, config_path: Path) -> None:
         config: ModelConfig instance to save
         config_path: Path where to save the configuration
     """
-    config_path.parent.mkdir(parents=True, exist_ok=True)
+    resolved_config_path = _resolve_and_validate_config_path(config_path)
 
-    with open(config_path, "w", encoding="utf-8") as f:
+    resolved_config_path.parent.mkdir(parents=True, exist_ok=True)
+
+    with open(resolved_config_path, "w", encoding="utf-8") as f:
         json.dump(asdict(config), f, indent=2)
 
-    logger.info(f"Saved model configuration to {config_path}")
+    logger.info(f"Saved model configuration to {resolved_config_path}")
 
 
 # Default configuration instance for convenience
