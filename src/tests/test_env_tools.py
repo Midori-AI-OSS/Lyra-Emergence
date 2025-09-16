@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import logging
+
 from unittest.mock import mock_open
 
 from src.tools import get_tools
@@ -40,3 +42,11 @@ def test_tools_enabled(monkeypatch):
     assert status.network_tools_enabled
     # Should include: 2 journal tools + 3 MCP tools + 3 Playwright tools = 8 total
     assert len(tools) >= 2  # At least the basic journal tools should be available
+
+
+def test_read_os_release_rejects_custom_paths(caplog):
+    with caplog.at_level(logging.WARNING):
+        data = env_check._read_os_release("/tmp/os-release")
+
+    assert data == {}
+    assert any("Rejected os-release path" in record.message for record in caplog.records)

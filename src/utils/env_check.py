@@ -1,11 +1,22 @@
 from __future__ import annotations
 
 import logging
+
+from pathlib import Path
 from dataclasses import dataclass
 from urllib.error import URLError
 from urllib.request import urlopen
 
 logger = logging.getLogger(__name__)
+
+
+_ALLOWED_OS_RELEASE_PATHS: frozenset[Path] = frozenset(
+    Path(candidate).resolve(strict=False)
+    for candidate in (
+        "/etc/os-release",
+        "/usr/lib/os-release",
+    )
+)
 
 
 @dataclass(frozen=True)
@@ -37,13 +48,23 @@ def _read_os_release(path: str = "/etc/os-release") -> dict[str, str]:
 
     data: dict[str, str] = {}
     try:
-        with open(path, encoding="utf-8") as fh:
+        resolved_path = Path(path).expanduser().resolve()
+    except (OSError, RuntimeError) as err:
+        logger.warning("Unable to resolve os-release path %s: %s", path, err)
+        return data
+
+    if resolved_path not in _ALLOWED_OS_RELEASE_PATHS:
+        logger.warning("Rejected os-release path %s", resolved_path)
+        return data
+
+    try:
+        with open(resolved_path, encoding="utf-8") as fh:
             for line in fh:
                 if "=" in line:
                     key, value = line.strip().split("=", 1)
                     data[key] = value.strip().strip('"')
     except FileNotFoundError:
-        logger.debug("os-release file not found at %s", path)
+        logger.debug("os-release file not found at %s", resolved_path)
     return data
 
 
