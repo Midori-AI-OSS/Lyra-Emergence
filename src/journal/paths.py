@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-
+import os
 
 class JournalPathError(ValueError):
     """Raised when a journal path fails validation."""
@@ -45,7 +45,29 @@ def normalize_journal_path(
     """
 
     candidate = Path(path).expanduser()
-    normalized = candidate.resolve(strict=False)
+    # Use strict resolution if the path exists; fallback to normpath otherwise.
+    if candidate.exists():
+        normalized = candidate.resolve(strict=True)
+        # Reject symlinks to avoid escape via links
+        if normalized.is_symlink():
+            raise JournalPathError(f"Journal path cannot be a symlink: {candidate}")
+    else:
+        # When the file does not exist, construct a normpath variant rooted in the safest allowed directory.
+        # For each trusted dir, try to resolve; only allow if normalization stays within the trusted root.
+        normalized = None
+        for trusted_dir in TRUSTED_JOURNAL_DIRS:
+            base_dir = trusted_dir
+            try_path = base_dir / candidate.name
+            combined = os.path.normpath(os.path.join(str(base_dir), str(candidate.name)))
+            try_path_obj = Path(combined)
+            if _is_within_directory(try_path_obj.resolve(strict=False), base_dir):
+                normalized = try_path_obj
+                break
+        if normalized is None:
+            trusted = ", ".join(str(directory) for directory in TRUSTED_JOURNAL_DIRS)
+            raise JournalPathError(
+                f"Journal path {candidate} must reside within a trusted directory: {trusted}"
+            )
 
     if normalized.suffix.lower() not in ALLOWED_JOURNAL_EXTENSIONS:
         allowed = ", ".join(sorted(ALLOWED_JOURNAL_EXTENSIONS))
@@ -54,7 +76,8 @@ def normalize_journal_path(
             f"({allowed}). Received: {candidate.name}"
         )
 
-    if not any(_is_within_directory(normalized, directory) for directory in TRUSTED_JOURNAL_DIRS):
+    # Double-check: path must reside inside trusted directories after all normalization
+    if not any(_is_within_directory(normalized.resolve(strict=False), directory) for directory in TRUSTED_JOURNAL_DIRS):
         trusted = ", ".join(str(directory) for directory in TRUSTED_JOURNAL_DIRS)
         raise JournalPathError(
             f"Journal path {candidate} must reside within a trusted directory: {trusted}"
