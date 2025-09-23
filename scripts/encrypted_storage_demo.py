@@ -43,7 +43,7 @@ def demo_encryption_system():
         entry_type="journal",
         emotional_tone=["demonstration", "efficient"],
         description="Performance test for encrypted PyTorch storage system",
-        emergent_companion_reflections="This system provides encrypted storage with PyTorch optimization while maintaining full Pydantic validation for type safety and data integrity.",
+        lyra_reflections="This system provides encrypted storage with PyTorch optimization while maintaining full Pydantic validation for type safety and data integrity.",
         tags=["performance", "security", "pytorch", "encryption"],
         stewardship_trace=StewardshipTrace(
             committed_by="Steward",

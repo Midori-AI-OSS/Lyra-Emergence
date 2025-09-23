@@ -7,8 +7,8 @@ import pytest
 from langchain_core.embeddings import FakeEmbeddings
 
 from src.journal.models import JournalEntry
-from src.vectorstore.chroma import ingest_journal
 from src.journal.models import StewardshipTrace
+from src.vectorstore.chroma import ingest_journal
 
 
 @pytest.fixture
@@ -27,7 +27,7 @@ def sample_entries() -> list[dict[str, object]]:
             emotional_tone=["neutral"],
             description=text,
             key_insights=[],
-            emergent_companion_reflections=text,
+            lyra_reflections=text,
             tags=["test"],
             stewardship_trace=StewardshipTrace(
                 committed_by="Tester",

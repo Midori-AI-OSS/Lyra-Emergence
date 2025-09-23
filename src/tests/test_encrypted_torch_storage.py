@@ -29,7 +29,7 @@ class TestEncryptedTorchStorage:
             entry_type="journal",
             emotional_tone=["reflective"],
             description="Test encrypted storage",
-            emergent_companion_reflections="Testing encryption capabilities",
+            lyra_reflections="Testing encryption capabilities",
             tags=["test", "encryption"],
             stewardship_trace=StewardshipTrace(
                 committed_by="Steward",
@@ -71,7 +71,7 @@ class TestEncryptedTorchStorage:
                 entry_type="journal",
                 emotional_tone=["reflective"],
                 description=f"Test entry {i}",
-                emergent_companion_reflections=f"Reflection {i}",
+                lyra_reflections=f"Reflection {i}",
                 tags=["test"],
                 stewardship_trace=StewardshipTrace(
                     committed_by="Steward",
@@ -96,7 +96,7 @@ class TestEncryptedTorchStorage:
             
             for i, entry in enumerate(loaded_entries):
                 assert entry.description == f"Test entry {i}"
-                assert entry.emergent_companion_reflections == f"Reflection {i}"
+                assert entry.lyra_reflections == f"Reflection {i}"
                 
         finally:
             tmp_path.unlink(missing_ok=True)
@@ -125,7 +125,7 @@ class TestEncryptedTorchStorage:
                 entry_type="journal",
                 emotional_tone=["test"],
                 description="Key compatibility test",
-                emergent_companion_reflections="Testing key sharing",
+                lyra_reflections="Testing key sharing",
                 tags=["key", "test"],
                 stewardship_trace=StewardshipTrace(
                     committed_by="Steward",
@@ -158,7 +158,7 @@ class TestEncryptedTorchStorage:
                     "entry_type": "journal",
                     "emotional_tone": ["nostalgic"],
                     "description": "Legacy JSON entry",
-                    "emergent_companion_reflections": "Migrating to encrypted storage",
+                    "lyra_reflections": "Migrating to encrypted storage",
                     "tags": ["migration", "json"],
                     "stewardship_trace": {
                         "committed_by": "Steward",
@@ -204,7 +204,7 @@ class TestEncryptedTorchStorage:
             entry_type="journal",
             emotional_tone=["experimental"],
             description="Round-trip test",
-            emergent_companion_reflections="Testing round-trip conversion",
+            lyra_reflections="Testing round-trip conversion",
             tags=["roundtrip", "export"],
             stewardship_trace=StewardshipTrace(
                 committed_by="Steward",
@@ -252,7 +252,7 @@ class TestEncryptedTorchStorage:
             entry_type="journal",
             emotional_tone=["private"],
             description="SENSITIVE_SECRET_CONTENT",
-            emergent_companion_reflections="This contains secret reflections",
+            lyra_reflections="This contains secret reflections",
             tags=["secret", "private"],
             stewardship_trace=StewardshipTrace(
                 committed_by="Steward",
@@ -333,7 +333,7 @@ class TestConvenienceFunctions:
                             "entry_type": "journal",
                             "emotional_tone": ["bulk_test"],
                             "description": f"Bulk migration test {i}",
-                            "emergent_companion_reflections": f"Batch processing entry {i}",
+                            "lyra_reflections": f"Batch processing entry {i}",
                             "tags": ["bulk", "migration"],
                             "stewardship_trace": {
                                 "committed_by": "Steward",

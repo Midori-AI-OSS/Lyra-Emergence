@@ -18,7 +18,7 @@ def test_publish_selection_workflow(tmp_path: Path) -> None:
                 "description": "this contains a secret",
                 "summary": "contains secret",
                 "text": "this contains a secret",
-                "emergent_companion_reflections": "this contains a secret",
+                "lyra_reflections": "this contains a secret",
                 "tags": ["test"],
                 "publish": False,
                 "stewardship_trace": {
@@ -39,7 +39,7 @@ def test_publish_selection_workflow(tmp_path: Path) -> None:
                 "description": "nothing sensitive here",
                 "summary": "ordinary",
                 "text": "nothing sensitive here",
-                "emergent_companion_reflections": "nothing sensitive here",
+                "lyra_reflections": "nothing sensitive here",
                 "tags": ["test"],
                 "publish": False,
                 "stewardship_trace": {
