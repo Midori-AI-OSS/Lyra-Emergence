@@ -44,7 +44,21 @@ def normalize_journal_path(
             has an unexpected extension, or does not exist when required.
     """
 
-    candidate = Path(path).expanduser()
+    # Sanitize path: only allow relative paths and filenames; reject absolute, parent traversal, or directory components.
+    import os
+    import re
+    raw_path = str(path)
+    if os.path.isabs(raw_path):
+        raise JournalPathError("Absolute paths are not allowed for journal files.")
+    # Prevent parent-directory traversal
+    path_parts = Path(raw_path).parts
+    if any(part == ".." for part in path_parts):
+        raise JournalPathError("Parent directory traversal is not allowed in journal file paths.")
+    # Prevent directory separators except for a simple filename (disallow subdirs)
+    if len(path_parts) > 1:
+        raise JournalPathError("Only filenames (no directories) are allowed for journal file paths.")
+
+    candidate = Path(raw_path).expanduser()
     # Use strict resolution if the path exists; fallback to normpath otherwise.
     if candidate.exists():
         normalized = candidate.resolve(strict=True)
