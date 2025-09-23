@@ -2,8 +2,9 @@ from __future__ import annotations
 
 from typing import Any
 
-from pydantic import BaseModel
 from pydantic import Field
+from pydantic import BaseModel
+from pydantic import AliasChoices
 
 
 class RitualContribution(BaseModel):
@@ -85,9 +86,15 @@ class JournalEntry(BaseModel):
         default_factory=list,
         description="Key insights from the entry",
     )
-    emergent_companion_reflections: str = Field(
+    lyra_reflections: str = Field(
         ...,
-        description="Reflections from the Emergent Companion",
+        description="Reflections from Lyra",
+        validation_alias=AliasChoices(
+            "lyra_reflections",
+            "lyra_reflection",
+            "emergent_companion_reflections",
+        ),
+        serialization_alias="lyra_reflections",
     )
     tags: list[str] = Field(..., description="Tags for categorization")
     stewardship_trace: StewardshipTrace = Field(

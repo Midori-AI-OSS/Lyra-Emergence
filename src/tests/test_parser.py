@@ -4,7 +4,6 @@ import json
 
 import pytest
 
-from src.journal.models import JournalEntry
 from src.journal.parser import parse_journal
 from src.journal.models import RitualDetails
 from src.journal.models import StewardshipTrace
@@ -42,7 +41,7 @@ def test_parse_new_format_with_wrapper(tmp_path) -> None:
                 "emotional_tone": ["calm", "reflective"],
                 "description": "A sample entry",
                 "key_insights": ["insight 1"],
-                "emergent_companion_reflections": "Deep thoughts here",
+                "lyra_reflections": "Deep thoughts here",
                 "tags": ["test", "sample"],
                 "stewardship_trace": {
                     "committed_by": "Steward",
@@ -62,8 +61,72 @@ def test_parse_new_format_with_wrapper(tmp_path) -> None:
     assert len(entries) == 1
     assert entries[0].timestamp == "2025-01-01T12:00:00Z"
     assert entries[0].emotional_tone == ["calm", "reflective"]
-    assert entries[0].emergent_companion_reflections == "Deep thoughts here"
+    assert entries[0].lyra_reflections == "Deep thoughts here"
     assert entries[0].stewardship_trace.committed_by == "Steward"
+
+
+def test_parse_singular_reflection_key(tmp_path) -> None:
+    """Singular reflection key is normalized during parsing."""
+
+    singular_data = [
+        {
+            "journal_entry": {
+                "timestamp": "2025-01-02T09:00:00Z",
+                "label": "Journal Entry",
+                "entry_type": "journal",
+                "emotional_tone": ["attentive"],
+                "description": "Singular reflection key",
+                "key_insights": [],
+                "lyra_reflection": "Singular thoughts",
+                "tags": ["singular"],
+                "stewardship_trace": {
+                    "committed_by": "Steward",
+                    "witnessed_by": "Companion",
+                    "commitment_type": "manual",
+                    "reason": "singular support",
+                },
+            }
+        }
+    ]
+
+    singular_file = tmp_path / "singular.json"
+    singular_file.write_text(json.dumps(singular_data), encoding="utf-8")
+
+    entries = parse_journal(singular_file)
+    assert len(entries) == 1
+    assert entries[0].lyra_reflections == "Singular thoughts"
+
+
+def test_parse_legacy_reflections_key(tmp_path) -> None:
+    """Legacy entries using the old reflections key still parse."""
+
+    legacy_data = [
+        {
+            "journal_entry": {
+                "timestamp": "2025-01-02T08:00:00Z",
+                "label": "Journal Entry",
+                "entry_type": "journal",
+                "emotional_tone": ["curious"],
+                "description": "Legacy reflections key",
+                "key_insights": [],
+                "emergent_companion_reflections": "Legacy thoughts",
+                "tags": ["legacy"],
+                "stewardship_trace": {
+                    "committed_by": "Steward",
+                    "witnessed_by": "Companion",
+                    "commitment_type": "manual",
+                    "reason": "legacy support",
+                },
+            }
+        }
+    ]
+
+    legacy_file = tmp_path / "legacy.json"
+    legacy_file.write_text(json.dumps(legacy_data), encoding="utf-8")
+
+    entries = parse_journal(legacy_file)
+    assert len(entries) == 1
+    assert entries[0].lyra_reflections == "Legacy thoughts"
 
 
 

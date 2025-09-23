@@ -1,6 +1,8 @@
 """Utilities for reading structured journal entries."""
 
 import json
+
+from typing import Any
 from pathlib import Path
 
 from .models import JournalEntry
@@ -19,16 +21,30 @@ def parse_journal(path: str | Path) -> list[JournalEntry]:
     file_path = Path(path)
     data = json.loads(file_path.read_text(encoding="utf-8"))
 
-    if isinstance(data, dict) and "journal_entry" in data:
-        records = [data["journal_entry"]]
-    elif isinstance(data, list) and all(
-        isinstance(item, dict) and "journal_entry" in item for item in data
-    ):
-        records = [item["journal_entry"] for item in data]
-    else:
+    def collect_records(raw: Any) -> list[dict[str, Any]]:
+        if isinstance(raw, dict):
+            if "journal_entry" in raw:
+                entry = raw["journal_entry"]
+                if isinstance(entry, dict):
+                    return [entry]
+            raise ValueError("Invalid journal file format")
+        if isinstance(raw, list):
+            records: list[dict[str, Any]] = []
+            for item in raw:
+                records.extend(collect_records(item))
+            if records:
+                return records
+            raise ValueError("Invalid journal file format")
         raise ValueError("Invalid journal file format")
 
+    records = collect_records(data)
+
     for record in records:
+        if "lyra_reflections" not in record:
+            if "lyra_reflection" in record:
+                record["lyra_reflections"] = record.pop("lyra_reflection")
+            elif "emergent_companion_reflections" in record:
+                record["lyra_reflections"] = record.pop("emergent_companion_reflections")
         trace = record.get("stewardship_trace")
         if isinstance(trace, dict):
             if isinstance(trace.get("witnessed_by"), list):
