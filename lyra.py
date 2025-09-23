@@ -9,7 +9,7 @@ from src.publish.mark import toggle_publish_flag
 from src.utils.env_check import get_env_status
 from src.vectorstore.chroma import ingest_journal
 from src.utils.device_fallback import safe_load_pipeline
-from src.config.model_config import load_config
+from src.config.model_config import ConfigPathValidationError, load_config
 
 
 def main() -> None:
@@ -75,7 +75,13 @@ def main() -> None:
 
     # Load model configuration (auto-select is default unless disabled)
     auto_select = not args.no_auto_select
-    config = load_config(config_path=args.model_config, auto_select=auto_select)
+    try:
+        config = load_config(config_path=args.model_config, auto_select=auto_select)
+    except (ConfigPathValidationError, FileNotFoundError) as error:
+        console.print(
+            f"[bold red]Invalid model configuration path:[/bold red] {error}"
+        )
+        raise SystemExit(1)
 
     llm: BaseLanguageModel = safe_load_pipeline(
         model_id=config.model_id,

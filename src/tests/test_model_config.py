@@ -5,7 +5,15 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import Mock, patch
 
-from src.config.model_config import ModelConfig, load_config, save_config
+import pytest
+
+from src.config.model_config import (
+    ConfigPathValidationError,
+    ModelConfig,
+    load_config,
+    resolve_config_path,
+    save_config,
+)
 from src.utils.device_fallback import (
     _create_progressive_device_map,
     safe_load_model_with_config,
@@ -81,7 +89,9 @@ class TestConfigLoading:
             with open(config_path, "w") as f:
                 json.dump(config_data, f)
 
-            config = load_config(config_path)
+            config = load_config(
+                config_path, allowed_directories=(Path(temp_dir).resolve(),)
+            )
             assert config.model_id == "test/model"
             assert config.device_map == "auto"
             assert config.gpu_layers_fallback == 20
@@ -94,7 +104,11 @@ class TestConfigLoading:
                 model_id="test/model", device_map="auto", gpu_layers_fallback=16
             )
 
-            save_config(config, config_path)
+            save_config(
+                config,
+                config_path,
+                allowed_directories=(Path(temp_dir).resolve(),),
+            )
 
             # Verify file was created and contents are correct
             assert config_path.exists()
@@ -104,6 +118,68 @@ class TestConfigLoading:
             assert saved_data["model_id"] == "test/model"
             assert saved_data["device_map"] == "auto"
             assert saved_data["gpu_layers_fallback"] == 16
+
+    def test_load_config_missing_file_raises(self) -> None:
+        """Ensure an explicit config path must exist."""
+
+        with TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / "missing.json"
+
+            with pytest.raises(FileNotFoundError):
+                load_config(
+                    config_path,
+                    allowed_directories=(Path(temp_dir).resolve(),),
+                )
+
+
+class TestConfigPathValidation:
+    """Tests for configuration path validation helpers."""
+
+    def test_resolve_config_path_allows_permitted_directory(self, tmp_path) -> None:
+        """Paths inside allowed directories resolve correctly."""
+
+        allowed_dir = tmp_path / "allowed"
+        allowed_dir.mkdir()
+        config_path = allowed_dir / "config.json"
+
+        resolved = resolve_config_path(
+            config_path, allowed_directories=(allowed_dir.resolve(),)
+        )
+
+        assert resolved == config_path.resolve()
+
+    def test_resolve_config_path_requires_json_extension(self, tmp_path) -> None:
+        """Non-JSON configuration files are rejected."""
+
+        config_path = tmp_path / "config.txt"
+
+        with pytest.raises(ConfigPathValidationError):
+            resolve_config_path(config_path, allowed_directories=(tmp_path.resolve(),))
+
+    def test_resolve_config_path_rejects_outside_directory(self, tmp_path) -> None:
+        """Paths outside allowed directories raise an error."""
+
+        allowed_dir = tmp_path / "allowed"
+        blocked_dir = tmp_path / "blocked"
+        allowed_dir.mkdir()
+        blocked_dir.mkdir()
+        config_path = blocked_dir / "config.json"
+
+        with pytest.raises(ConfigPathValidationError):
+            resolve_config_path(config_path, allowed_directories=(allowed_dir.resolve(),))
+
+    def test_save_config_rejects_invalid_extension(self, tmp_path) -> None:
+        """Saving to a non-JSON file raises a validation error."""
+
+        config = ModelConfig()
+        target = tmp_path / "config.txt"
+
+        with pytest.raises(ConfigPathValidationError):
+            save_config(
+                config,
+                target,
+                allowed_directories=(tmp_path.resolve(),),
+            )
 
 
 class TestProgressiveDeviceMap:

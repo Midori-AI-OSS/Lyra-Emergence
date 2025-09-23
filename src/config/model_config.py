@@ -4,12 +4,79 @@ import json
 import logging
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 from src.config.model_recommendations import recommend_model
 from src.utils.system_info import detect_optimal_memory_config, get_available_memory
 
 logger = logging.getLogger(__name__)
+
+
+class ConfigPathValidationError(ValueError):
+    """Raised when a model configuration path fails validation."""
+
+
+def _resolve_directory(directory: Path) -> Path:
+    """Resolve a directory path for comparison purposes."""
+
+    return directory.expanduser().resolve()
+
+
+def _is_within_directory(path: Path, directory: Path) -> bool:
+    """Return True if ``path`` is inside ``directory``."""
+
+    try:
+        path.relative_to(directory)
+    except ValueError:
+        return False
+    return True
+
+
+DEFAULT_ALLOWED_CONFIG_DIRECTORIES: tuple[Path, ...] = tuple(
+    dict.fromkeys(
+        _resolve_directory(base)
+        for base in (Path("config"), Path("data"), Path("."))
+    )
+)
+
+
+def resolve_config_path(
+    config_path: Path, allowed_directories: Iterable[Path] | None = None
+) -> Path:
+    """Resolve and validate a configuration path.
+
+    Args:
+        config_path: Path provided by the caller.
+        allowed_directories: Optional iterable of directories where configs are permitted.
+
+    Returns:
+        Absolute ``Path`` to the configuration file.
+
+    Raises:
+        ConfigPathValidationError: If the path is outside an allowed directory or
+            does not end with ``.json``.
+    """
+
+    resolved_path = config_path.expanduser().resolve()
+    allowed = (
+        tuple(_resolve_directory(path) for path in allowed_directories)
+        if allowed_directories is not None
+        else DEFAULT_ALLOWED_CONFIG_DIRECTORIES
+    )
+
+    if resolved_path.suffix.lower() != ".json":
+        raise ConfigPathValidationError(
+            "Model configuration files must have a .json extension."
+        )
+
+    parent_directory = resolved_path.parent
+    if not any(_is_within_directory(parent_directory, directory) for directory in allowed):
+        allowed_dirs = ", ".join(str(directory) for directory in allowed)
+        raise ConfigPathValidationError(
+            f"Config path '{config_path}' must be located inside one of: {allowed_dirs}."
+        )
+
+    return resolved_path
 
 
 @dataclass
@@ -77,18 +144,31 @@ class ModelConfig:
 
 
 def load_config(
-    config_path: Path | None = None, auto_select: bool = False
+    config_path: Path | None = None,
+    auto_select: bool = False,
+    allowed_directories: Iterable[Path] | None = None,
 ) -> ModelConfig:
     """Load model configuration from file or return default.
 
     Args:
         config_path: Path to configuration file. If None, looks for default locations.
         auto_select: If True, automatically select optimal model based on system resources.
+        allowed_directories: Optional override for permitted configuration directories.
 
     Returns:
         ModelConfig instance with loaded or default configuration
     """
-    if config_path is None:
+    validated_path: Path | None = None
+
+    if config_path is not None:
+        validated_path = resolve_config_path(
+            config_path, allowed_directories=allowed_directories
+        )
+        if not validated_path.exists():
+            raise FileNotFoundError(
+                f"Config file '{validated_path}' does not exist."
+            )
+    else:
         # Look for default config file locations
         possible_paths = [
             Path("config/model_config.json"),
@@ -98,23 +178,33 @@ def load_config(
 
         for path in possible_paths:
             if path.exists():
-                config_path = path
+                try:
+                    validated_path = resolve_config_path(
+                        path, allowed_directories=allowed_directories
+                    )
+                except ConfigPathValidationError as exc:
+                    logger.debug(
+                        "Skipping config path %s due to validation error: %s",
+                        path,
+                        exc,
+                    )
+                    continue
                 break
 
     base_config = ModelConfig()
 
     # Load from file if available
-    if config_path and config_path.exists():
+    if validated_path and validated_path.exists():
         try:
-            with open(config_path, encoding="utf-8") as f:
+            with open(validated_path, encoding="utf-8") as f:
                 config_data = json.load(f)
 
-            logger.info(f"Loaded model configuration from {config_path}")
+            logger.info(f"Loaded model configuration from {validated_path}")
             base_config = ModelConfig(**config_data)
 
         except Exception as e:
             logger.warning(
-                f"Failed to load config from {config_path}: {e}. Using defaults."
+                f"Failed to load config from {validated_path}: {e}. Using defaults."
             )
 
     # Auto-select model if requested
@@ -166,19 +256,27 @@ def load_config(
     return base_config
 
 
-def save_config(config: ModelConfig, config_path: Path) -> None:
+def save_config(
+    config: ModelConfig,
+    config_path: Path,
+    allowed_directories: Iterable[Path] | None = None,
+) -> None:
     """Save model configuration to file.
 
     Args:
         config: ModelConfig instance to save
         config_path: Path where to save the configuration
+        allowed_directories: Optional override for permitted configuration directories.
     """
-    config_path.parent.mkdir(parents=True, exist_ok=True)
+    validated_path = resolve_config_path(
+        config_path, allowed_directories=allowed_directories
+    )
+    validated_path.parent.mkdir(parents=True, exist_ok=True)
 
-    with open(config_path, "w", encoding="utf-8") as f:
+    with open(validated_path, "w", encoding="utf-8") as f:
         json.dump(asdict(config), f, indent=2)
 
-    logger.info(f"Saved model configuration to {config_path}")
+    logger.info(f"Saved model configuration to {validated_path}")
 
 
 # Default configuration instance for convenience
