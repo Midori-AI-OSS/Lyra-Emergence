@@ -1,6 +1,10 @@
 import json
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Any
+
+from src.journal.paths import JournalPathError
+from src.journal.paths import normalize_journal_path
 
 
 def toggle_publish_flag(journal_path: Path, entry_id: str) -> bool:
@@ -8,9 +12,21 @@ def toggle_publish_flag(journal_path: Path, entry_id: str) -> bool:
 
     Returns ``True`` if the entry was found and updated, otherwise ``False``.
     """
-    journal_path = Path(journal_path)
-    with journal_path.open("r", encoding="utf-8") as fh:
-        data: Any = json.load(fh)
+    safe_path = normalize_journal_path(journal_path)
+
+    try:
+        with safe_path.open("r", encoding="utf-8") as fh:
+            data: Any = json.load(fh)
+    except FileNotFoundError as exc:
+        raise JournalPathError(f"Journal file not found: {safe_path}") from exc
+    except JSONDecodeError as exc:
+        raise JournalPathError(
+            f"Journal file {safe_path} is not valid JSON: {exc.msg}"
+        ) from exc
+    except OSError as exc:  # pragma: no cover - unexpected I/O failure
+        raise JournalPathError(
+            f"Unable to read journal file {safe_path}: {exc.strerror or exc}"
+        ) from exc
 
     entries = data if isinstance(data, list) else data.get("entries", [])
     updated = False
@@ -22,6 +38,11 @@ def toggle_publish_flag(journal_path: Path, entry_id: str) -> bool:
             break
 
     if updated:
-        with journal_path.open("w", encoding="utf-8") as fh:
-            json.dump(data, fh, indent=2, ensure_ascii=False)
+        try:
+            with safe_path.open("w", encoding="utf-8") as fh:
+                json.dump(data, fh, indent=2, ensure_ascii=False)
+        except OSError as exc:  # pragma: no cover - unexpected I/O failure
+            raise JournalPathError(
+                f"Unable to write journal file {safe_path}: {exc.strerror or exc}"
+            ) from exc
     return updated

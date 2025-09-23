@@ -1,12 +1,26 @@
 import json
 from pathlib import Path
 
-from src.publish.mark import toggle_publish_flag
+import pytest
+
+from src.journal.paths import JournalPathError
+from src.journal.paths import normalize_journal_path
 from src.publish.export import export_marked_entries
+from src.publish.mark import toggle_publish_flag
 
 
-def test_publish_selection_workflow(tmp_path: Path) -> None:
-    journal_path = tmp_path / "journal.json"
+def test_publish_selection_workflow(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    trusted_dir = tmp_path / "journals"
+    trusted_dir.mkdir()
+    monkeypatch.setattr(
+        "src.journal.paths.TRUSTED_JOURNAL_DIRS",
+        (trusted_dir.resolve(),),
+        raising=False,
+    )
+
+    journal_path = trusted_dir / "journal.json"
     entries = [
         {
             "journal_entry": {
@@ -60,3 +74,48 @@ def test_publish_selection_workflow(tmp_path: Path) -> None:
     content = exported[0].read_text(encoding="utf-8")
     assert "[REDACTED]" in content
     assert 'summary: "contains secret"' in content
+
+
+def test_toggle_publish_flag_rejects_untrusted_path(tmp_path: Path) -> None:
+    journal_path = tmp_path / "journal.json"
+    with journal_path.open("w", encoding="utf-8") as fh:
+        json.dump([], fh)
+
+    with pytest.raises(JournalPathError):
+        toggle_publish_flag(journal_path, "1")
+
+
+def test_normalize_journal_path_accepts_trusted_json(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    trusted_dir = tmp_path / "journals"
+    trusted_dir.mkdir()
+    monkeypatch.setattr(
+        "src.journal.paths.TRUSTED_JOURNAL_DIRS",
+        (trusted_dir.resolve(),),
+        raising=False,
+    )
+
+    journal_path = trusted_dir / "entry.json"
+    journal_path.write_text("[]", encoding="utf-8")
+
+    normalized = normalize_journal_path(journal_path)
+    assert normalized == journal_path.resolve()
+
+
+def test_normalize_journal_path_rejects_unexpected_extension(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    trusted_dir = tmp_path / "journals"
+    trusted_dir.mkdir()
+    monkeypatch.setattr(
+        "src.journal.paths.TRUSTED_JOURNAL_DIRS",
+        (trusted_dir.resolve(),),
+        raising=False,
+    )
+
+    journal_path = trusted_dir / "entry.txt"
+    journal_path.write_text("[]", encoding="utf-8")
+
+    with pytest.raises(JournalPathError):
+        normalize_journal_path(journal_path)
