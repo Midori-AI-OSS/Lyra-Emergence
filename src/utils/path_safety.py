@@ -27,45 +27,25 @@ def ensure_journal_path(candidate: Path) -> Path:
         ValueError: If the path is missing, points to a directory, contains a
             symbolic link, or resolves outside the approved journal roots.
     """
-
     # Expand potential "~" in input
     expanded_candidate = candidate.expanduser()
 
-    # If absolute, must be strictly under one of the roots; else, treat as relative to first root
-    approved_root = None
-    for root in APPROVED_JOURNAL_ROOTS:
-        try:
-            candidate_rel = expanded_candidate.relative_to(root)
-            approved_root = root
-            break
-        except ValueError:
-            continue
+    # If path is not absolute, anchor it in the first approved root
+    if not expanded_candidate.is_absolute():
+        expanded_candidate = (APPROVED_JOURNAL_ROOTS[0] / expanded_candidate)
 
-    if expanded_candidate.is_absolute():
-        if not approved_root:
-            allowed = ", ".join(str(root) for root in APPROVED_JOURNAL_ROOTS)
-            raise ValueError(
-                f"Absolute journal path must be located within an approved journal directory ({allowed}): {expanded_candidate}"
-            )
-        raw_path = expanded_candidate
-    else:
-        # If path is relative, anchor it strictly in the first approved root
-        root = APPROVED_JOURNAL_ROOTS[0]
-        raw_path = (root / expanded_candidate)
-        approved_root = root
-
-    # Now resolve the path and check containment
+    # Resolve the path, ensuring it exists and is canonical
     try:
-        resolved_path = raw_path.resolve(strict=True)
+        resolved_path = expanded_candidate.resolve(strict=True)
     except Exception:
         raise ValueError(f"Journal path does not exist: {candidate}")
 
-    # Disallow any directories
+    # Disallow directories
     if resolved_path.is_dir():
         raise ValueError(f"Journal path must reference a file: {resolved_path}")
 
-    # Disallow any links in the resolved path's parents or itself
-    # (better to check after fully resolved)
+    # Disallow any symlinks in the path or its parents
+    # Ensure the resolved file is strictly within an approved root
     current_path = resolved_path
     while True:
         if current_path.is_symlink():
