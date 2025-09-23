@@ -30,9 +30,15 @@ def ensure_journal_path(candidate: Path) -> Path:
     # Expand potential "~" in input
     expanded_candidate = candidate.expanduser()
 
-    # If path is not absolute, anchor it in the first approved root
-    if not expanded_candidate.is_absolute():
-        expanded_candidate = (APPROVED_JOURNAL_ROOTS[0] / expanded_candidate)
+    # Disallow absolute paths provided by user input
+    if expanded_candidate.is_absolute():
+        raise ValueError(
+            f"Absolute paths are not allowed for journal files: {candidate} "
+            f"(must be relative to one of the approved roots)"
+        )
+
+    # Anchor relative path in the first approved root
+    expanded_candidate = (APPROVED_JOURNAL_ROOTS[0] / expanded_candidate)
 
     # Resolve the path, ensuring it exists and is canonical
     try:
