@@ -37,22 +37,31 @@ def ensure_journal_path(candidate: Path) -> Path:
             f"(must be relative to one of the approved roots)"
         )
 
-    # Anchor relative path in the first approved root
-    expanded_candidate = (APPROVED_JOURNAL_ROOTS[0] / expanded_candidate)
+    # Try to resolve the candidate path under each approved root
+    valid_resolved_path = None
+    for root in APPROVED_JOURNAL_ROOTS:
+        try:
+            joined_path = (root / expanded_candidate)
+            resolved_path = joined_path.resolve(strict=True)
+            # Check that resolved path is contained within this root
+            if resolved_path.is_relative_to(root):
+                valid_resolved_path = resolved_path
+                break
+        except Exception:
+            continue # Try next root
 
-    # Resolve the path, ensuring it exists and is canonical
-    try:
-        resolved_path = expanded_candidate.resolve(strict=True)
-    except Exception:
-        raise ValueError(f"Journal path does not exist: {candidate}")
+    if valid_resolved_path is None:
+        allowed = ", ".join(str(root) for root in APPROVED_JOURNAL_ROOTS)
+        raise ValueError(
+            f"Journal path must be located within an approved journal directory ({allowed}): {expanded_candidate}"
+        )
 
     # Disallow directories
-    if resolved_path.is_dir():
-        raise ValueError(f"Journal path must reference a file: {resolved_path}")
+    if valid_resolved_path.is_dir():
+        raise ValueError(f"Journal path must reference a file: {valid_resolved_path}")
 
     # Disallow any symlinks in the path or its parents
-    # Ensure the resolved file is strictly within an approved root
-    current_path = resolved_path
+    current_path = valid_resolved_path
     while True:
         if current_path.is_symlink():
             raise ValueError(
@@ -62,10 +71,4 @@ def ensure_journal_path(candidate: Path) -> Path:
             break
         current_path = current_path.parent
 
-    if not any(resolved_path.is_relative_to(root) for root in APPROVED_JOURNAL_ROOTS):
-        allowed = ", ".join(str(root) for root in APPROVED_JOURNAL_ROOTS)
-        raise ValueError(
-            f"Journal path must be located within an approved journal directory ({allowed}): {resolved_path}"
-        )
-
-    return resolved_path
+    return valid_resolved_path
