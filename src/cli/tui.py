@@ -12,15 +12,16 @@ from rich.console import Console
 from langchain_core.language_models import BaseLanguageModel
 
 from src.cli.chat import ChatSession
-from src.utils.env_check import get_env_status
 from src.config.model_config import load_config
 from src.publish.mark import toggle_publish_flag
-from src.utils.system_info import get_memory_tier
-from src.vectorstore.chroma import ingest_journal
-from src.utils.system_info import get_available_memory
 from src.utils.device_fallback import safe_load_pipeline
+from src.utils.env_check import get_env_status
+from src.utils.path_safety import ensure_journal_path
+from src.utils.system_info import get_available_memory
+from src.utils.system_info import get_memory_tier
 from src.config.model_recommendations import MODEL_DATABASE
 from src.config.model_recommendations import get_models_by_category
+from src.vectorstore.chroma import ingest_journal
 
 
 class LyraTUI:
@@ -437,18 +438,27 @@ class LyraTUI:
         )
         
         try:
-            journal_file = Path(journal_path)
-            if not journal_file.exists():
-                self.console.print(f"❌ File not found: {journal_file}", style="bold red")
-            else:
+            journal_file = ensure_journal_path(Path(journal_path))
+        except ValueError as exc:
+            self.console.print(f"❌ {exc}", style="bold red")
+        except Exception as exc:  # pragma: no cover - unexpected failures
+            self.console.print(f"❌ Error ingesting journal: {exc}", style="bold red")
+        else:
+            try:
                 with self.console.status(f"[bold green]Ingesting {journal_file}..."):
-                    ingest_journal(journal_file, persist_directory=Path("data/chroma"))
+                    ingest_journal(
+                        journal_file,
+                        persist_directory=Path("data/chroma"),
+                    )
                 self.console.print(
                     f"✅ Successfully ingested {journal_file}", style="bold green"
                 )
-        except Exception as e:
-            self.console.print(f"❌ Error ingesting journal: {e}", style="bold red")
-        
+            except Exception as exc:  # pragma: no cover - ingest errors
+                self.console.print(
+                    f"❌ Error ingesting journal: {exc}",
+                    style="bold red",
+                )
+
         Prompt.ask("Press Enter to continue")
 
     def mark_journal_tool(self):

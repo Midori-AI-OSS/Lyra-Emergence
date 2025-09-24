@@ -9,6 +9,7 @@ from src.publish.mark import toggle_publish_flag
 from src.utils.env_check import get_env_status
 from src.vectorstore.chroma import ingest_journal
 from src.utils.device_fallback import safe_load_pipeline
+from src.utils.path_safety import ensure_journal_path
 from src.config.model_config import load_config
 
 
@@ -55,7 +56,13 @@ def main() -> None:
 
     # Handle legacy command line tools
     if args.ingest:
-        ingest_journal(args.ingest, persist_directory=Path("data/chroma"))
+        try:
+            journal_path = ensure_journal_path(args.ingest)
+        except ValueError as exc:
+            Console().print(f"❌ {exc}", style="bold red")
+            return
+
+        ingest_journal(journal_path, persist_directory=Path("data/chroma"))
         return
 
     if args.mark:
