@@ -13,6 +13,8 @@ from langchain_core.language_models import BaseLanguageModel
 
 from src.cli.chat import ChatSession
 from src.config.model_config import load_config
+from src.journal.paths import JournalPathError
+from src.journal.paths import normalize_journal_path
 from src.publish.mark import toggle_publish_flag
 from src.utils.device_fallback import safe_load_pipeline
 from src.utils.env_check import get_env_status
@@ -474,18 +476,26 @@ class LyraTUI:
         
         if entry_id:
             try:
-                journal_file = Path(journal_path)
-                if not journal_file.exists():
-                    self.console.print(f"❌ File not found: {journal_file}", style="bold red")
+                safe_path = normalize_journal_path(journal_path)
+            except JournalPathError as exc:
+                self.console.print(f"❌ {exc}", style="bold red")
+            else:
+                try:
+                    updated = toggle_publish_flag(safe_path, entry_id)
+                except JournalPathError as exc:
+                    self.console.print(f"❌ {exc}", style="bold red")
                 else:
-                    toggle_publish_flag(journal_file, entry_id)
-                    self.console.print(
-                        f"✅ Toggled publish flag for entry {entry_id} in {journal_file}", 
-                        style="bold green"
-                    )
-            except Exception as e:
-                self.console.print(f"❌ Error toggling publish flag: {e}", style="bold red")
-        
+                    if updated:
+                        self.console.print(
+                            f"✅ Toggled publish flag for entry {entry_id} in {safe_path}",
+                            style="bold green"
+                        )
+                    else:
+                        self.console.print(
+                            f"⚠️  Entry {entry_id} was not found in {safe_path}",
+                            style="bold yellow"
+                        )
+
         Prompt.ask("Press Enter to continue")
 
     def view_journal_directories(self):

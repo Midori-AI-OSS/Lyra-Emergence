@@ -5,6 +5,8 @@ from langchain_core.language_models import BaseLanguageModel
 from rich.console import Console
 
 from src.cli.chat import ChatSession
+from src.journal.paths import JournalPathError
+from src.journal.paths import normalize_journal_path
 from src.publish.mark import toggle_publish_flag
 from src.utils.env_check import get_env_status
 from src.vectorstore.chroma import ingest_journal
@@ -66,7 +68,23 @@ def main() -> None:
         return
 
     if args.mark:
-        toggle_publish_flag(args.journal, args.mark)
+        console = Console()
+        try:
+            journal_path = normalize_journal_path(args.journal)
+            updated = toggle_publish_flag(journal_path, args.mark)
+        except JournalPathError as exc:
+            console.print(f"❌ {exc}", style="bold red")
+            raise SystemExit(1)
+        if not updated:
+            console.print(
+                f"⚠️  Entry {args.mark} was not found in {journal_path}",
+                style="bold yellow",
+            )
+            raise SystemExit(1)
+        console.print(
+            f"✅ Toggled publish flag for entry {args.mark} in {journal_path}",
+            style="bold green",
+        )
         return
 
     # Default behavior: Launch TUI unless --notui is specified
