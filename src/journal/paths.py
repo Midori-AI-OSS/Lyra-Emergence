@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from pathlib import Path
-import os
 
 class JournalPathError(ValueError):
     """Raised when a journal path fails validation."""
@@ -17,93 +16,78 @@ TRUSTED_JOURNAL_DIRS = (
 )
 
 
-def _is_within_directory(path: Path, directory: Path) -> bool:
-    """Return ``True`` if ``path`` is located inside ``directory``."""
-
-    try:
-        path.relative_to(directory)
-    except ValueError:
-        return False
-    return True
-
-
 def normalize_journal_path(
     path: str | Path,
     *,
     require_exists: bool = True,
 ) -> Path:
-    """Return a normalized path if it resides within a trusted journal directory.
+    """Return a normalized path if it resides within a trusted journal directory."""
 
-    Args:
-        path: Path-like object pointing to the journal file.
-        require_exists: If ``True`` (the default), the path must point to an
-            existing file.
-
-    Raises:
-        JournalPathError: If the path falls outside the trusted directories,
-            has an unexpected extension, or does not exist when required.
-    """
-
-    # Sanitize path: only allow relative paths and filenames; reject absolute, parent traversal, or directory components.
-    import os
-    import re
-    raw_path = str(path)
-    if os.path.isabs(raw_path):
-        raise JournalPathError("Absolute paths are not allowed for journal files.")
-    # Prevent parent-directory traversal
-    path_parts = Path(raw_path).parts
-    if any(part == ".." for part in path_parts):
-        raise JournalPathError("Parent directory traversal is not allowed in journal file paths.")
-    # Prevent directory separators except for a simple filename (disallow subdirs)
-    if len(path_parts) > 1:
-        raise JournalPathError("Only filenames (no directories) are allowed for journal file paths.")
-
-    candidate = Path(raw_path).expanduser()
-    # Use strict resolution if the path exists; fallback to normpath otherwise.
-    if candidate.exists():
-        normalized = candidate.resolve(strict=True)
-        # Reject symlinks to avoid escape via links
-        if normalized.is_symlink():
-            raise JournalPathError(f"Journal path cannot be a symlink: {candidate}")
-    else:
-        # When the file does not exist, construct a normpath variant rooted in the safest allowed directory.
-        # For each trusted dir, try to resolve; only allow if normalization stays within the trusted root.
-        normalized = None
-        for trusted_dir in TRUSTED_JOURNAL_DIRS:
-            base_dir = trusted_dir
-            try_path = base_dir / candidate.name
-            combined = os.path.normpath(os.path.join(str(base_dir), str(candidate.name)))
-            try_path_obj = Path(combined)
-            if _is_within_directory(try_path_obj.resolve(strict=False), base_dir):
-                normalized = try_path_obj
-                break
-        if normalized is None:
-            trusted = ", ".join(str(directory) for directory in TRUSTED_JOURNAL_DIRS)
+    # Minimal pre-validation of user input to avoid dangerous path constructs
+    if isinstance(path, str):
+        if "\x00" in path:
+            raise JournalPathError("Journal path contains null byte, which is disallowed.")
+        # Reject absolute paths early (handled later as well), tilde expansions, and '..'
+        if path.startswith("/") or path.startswith("~") or path.startswith("\\"):
             raise JournalPathError(
-                f"Journal path {candidate} must reside within a trusted directory: {trusted}"
+                f"Journal path must not start with a root indicator or home reference: {path}"
             )
+        # On Windows, also check drive letters
+        import os
+        if os.name == "nt" and len(path) >= 2 and path[1] == ":":
+            raise JournalPathError(
+                f"Journal path must not be absolute (drive-letter): {path}"
+            )
+        # Reject traversal outside subdirectly via '..'
+        segments = [segment for segment in path.split("/") if segment]
+        if ".." in segments:
+            raise JournalPathError(
+                f"Journal path must not contain parent directory traversal '..': {path}"
+            )
+    elif not isinstance(path, Path):
+        raise JournalPathError("Invalid path type. Must be str or Path.")
 
-    if normalized.suffix.lower() not in ALLOWED_JOURNAL_EXTENSIONS:
+    raw_candidate = Path(path).expanduser()
+    trusted_dirs = tuple(directory.resolve() for directory in TRUSTED_JOURNAL_DIRS)
+
+    if raw_candidate.is_absolute():
+        candidate = raw_candidate
+    else:
+        candidate = Path.cwd() / raw_candidate
+
+    resolved = candidate.resolve(strict=False)
+
+    if require_exists and not resolved.exists():
+        raise JournalPathError(f"Journal file not found: {raw_candidate}")
+
+    if resolved.exists() and resolved.is_dir():
+        raise JournalPathError(f"Journal path must reference a file: {raw_candidate}")
+
+    if resolved.suffix.lower() not in ALLOWED_JOURNAL_EXTENSIONS:
         allowed = ", ".join(sorted(ALLOWED_JOURNAL_EXTENSIONS))
         raise JournalPathError(
             "Journal files must use one of the allowed extensions "
-            f"({allowed}). Received: {candidate.name}"
+            f"({allowed}). Received: {resolved.name}"
         )
 
-    # Double-check: path must reside inside trusted directories after all normalization
-    if not any(_is_within_directory(normalized.resolve(strict=False), directory) for directory in TRUSTED_JOURNAL_DIRS):
-        trusted = ", ".join(str(directory) for directory in TRUSTED_JOURNAL_DIRS)
+    if not any(resolved.is_relative_to(directory) for directory in trusted_dirs):
+        trusted = ", ".join(str(directory) for directory in trusted_dirs)
         raise JournalPathError(
-            f"Journal path {candidate} must reside within a trusted directory: {trusted}"
+            f"Journal path {raw_candidate} must reside within a trusted directory: {trusted}"
         )
 
-    if require_exists and not normalized.exists():
-        raise JournalPathError(f"Journal file not found: {candidate}")
+    # Reject symbolic links anywhere in the provided path
+    current = candidate
+    while True:
+        if current.exists() and current.is_symlink():
+            raise JournalPathError(
+                f"Journal path cannot include symbolic links: {raw_candidate}"
+            )
+        if current == current.parent:
+            break
+        current = current.parent
 
-    if normalized.exists() and normalized.is_dir():
-        raise JournalPathError(f"Journal path must reference a file: {candidate}")
-
-    return normalized
+    return resolved
 
 
 __all__ = [

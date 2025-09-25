@@ -48,6 +48,22 @@ uv run python scripts/test_ci_pipeline.py
 - Python test suite execution
 - Basic pipeline component validation
 
+### `convert_conversations.py`
+Transforms plain-text transcripts of conversations between Brian/Sandi and Lyra
+into prompt/response pairs that can be fed into fine-tuning pipelines.
+
+**Usage:**
+```bash
+uv run python scripts/convert_conversations.py path/to/transcript.txt
+uv run python scripts/convert_conversations.py transcript1.txt transcript2.txt -o output.jsonl
+```
+
+**Features:**
+- Supports one or multiple transcripts at a time
+- Emits JSON Lines (default) or JSON arrays via `--format`
+- Adds metadata identifying the original speaker and conversation index
+- Gracefully reports formatting issues in the source transcript
+
 ## CI/CD Integration
 
 These scripts are integrated into the GitHub Actions workflow (`.github/workflows/ci.yml`) to ensure:
