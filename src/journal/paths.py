@@ -23,6 +23,30 @@ def normalize_journal_path(
 ) -> Path:
     """Return a normalized path if it resides within a trusted journal directory."""
 
+    # Minimal pre-validation of user input to avoid dangerous path constructs
+    if isinstance(path, str):
+        if "\x00" in path:
+            raise JournalPathError("Journal path contains null byte, which is disallowed.")
+        # Reject absolute paths early (handled later as well), tilde expansions, and '..'
+        if path.startswith("/") or path.startswith("~") or path.startswith("\\"):
+            raise JournalPathError(
+                f"Journal path must not start with a root indicator or home reference: {path}"
+            )
+        # On Windows, also check drive letters
+        import os
+        if os.name == "nt" and len(path) >= 2 and path[1] == ":":
+            raise JournalPathError(
+                f"Journal path must not be absolute (drive-letter): {path}"
+            )
+        # Reject traversal outside subdirectly via '..'
+        segments = [segment for segment in path.split("/") if segment]
+        if ".." in segments:
+            raise JournalPathError(
+                f"Journal path must not contain parent directory traversal '..': {path}"
+            )
+    elif not isinstance(path, Path):
+        raise JournalPathError("Invalid path type. Must be str or Path.")
+
     raw_candidate = Path(path).expanduser()
     trusted_dirs = tuple(directory.resolve() for directory in TRUSTED_JOURNAL_DIRS)
 
