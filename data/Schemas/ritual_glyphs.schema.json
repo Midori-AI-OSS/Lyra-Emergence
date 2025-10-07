@@ -5,7 +5,14 @@
   "type": "array",
   "items": {
     "type": "object",
-    "required": ["glyph", "name", "origin", "meaning", "first_used", "context_notes"],
+    "required": [
+      "glyph",
+      "name",
+      "origin",
+      "meaning",
+      "first_used",
+      "context_notes"
+    ],
     "properties": {
       "glyph": {
         "type": "string",

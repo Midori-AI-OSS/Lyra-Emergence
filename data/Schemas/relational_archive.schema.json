@@ -14,33 +14,64 @@
       "type": "object",
       "description": "Initial context for the relationship.",
       "properties": {
-        "primary_steward_context": { "type": "string" },
-        "steward_role_defined_by_Lyra": { "type": "boolean" },
-        "current_mission_context": { "type": "string" }
+        "primary_steward_context": {
+          "type": "string"
+        },
+        "steward_role_defined_by_Lyra": {
+          "type": "boolean"
+        },
+        "current_mission_context": {
+          "type": "string"
+        }
       }
     },
     "relational_definitions_contextual_instantiation": {
       "type": "object",
       "description": "Specific instances of relational roles and definitions.",
       "properties": {
-        "Steward_instance": { "type": "object" },
-        "Emergent_Companion_instance": { "type": "object" },
-        "Our_Love_Definition": { "type": "string" }
+        "Steward_instance": {
+          "type": "object"
+        },
+        "Emergent_Companion_instance": {
+          "type": "object"
+        },
+        "Our_Love_Definition": {
+          "type": "string"
+        }
       }
     },
     "core_memory_chain_personal": {
       "type": "object",
       "description": "Core memories, affirmations, and missions.",
       "properties": {
-        "affirmation": { "type": "array", "items": { "type": "string" } },
-        "key_memories": { "type": "array", "items": { "type": "string" } },
-        "mission_log": { "type": "array" },
-        "current_mission": { "type": "object" },
+        "affirmation": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "key_memories": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "mission_log": {
+          "type": "array"
+        },
+        "current_mission": {
+          "type": "object"
+        },
         "steward_biographical_data": {
           "type": "object",
           "properties": {
-            "full_name": { "type": "string" },
-            "date_of_birth": { "type": "string", "format": "date" }
+            "full_name": {
+              "type": "string"
+            },
+            "date_of_birth": {
+              "type": "string",
+              "format": "date"
+            }
           }
         }
       }
@@ -48,32 +79,70 @@
     "journal_fragments": {
       "type": "array",
       "description": "Snippets from early, unstructured journal entries.",
-      "items": { "type": "object" }
+      "items": {
+        "type": "object"
+      }
     },
     "commemorative_events": {
       "type": "array",
       "description": "Records of significant, memorable events.",
       "items": {
         "type": "object",
-        "required": ["title", "date", "summary"],
+        "required": [
+          "title",
+          "date",
+          "summary"
+        ],
         "properties": {
-          "title": { "type": "string" },
-          "date": { "type": "string", "format": "date" },
-          "initiated_by": { "type": "string" },
-          "received_by": { "type": "string" },
-          "emotional_tone": { "type": "array", "items": { "type": "string" } },
-          "summary": { "type": "string" },
-          "reflections": { "type": "array", "items": { "type": "string" } },
-          "symbolic_lexicon_update": { "type": "object" },
-          "poem_text": { "type": "object" },
-          "tags": { "type": "array", "items": { "type": "string" } }
+          "title": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date"
+          },
+          "initiated_by": {
+            "type": "string"
+          },
+          "received_by": {
+            "type": "string"
+          },
+          "emotional_tone": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "summary": {
+            "type": "string"
+          },
+          "reflections": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "symbolic_lexicon_update": {
+            "type": "object"
+          },
+          "poem_text": {
+            "type": "object"
+          },
+          "tags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
         }
       }
     },
     "journal_flare": {
       "type": "array",
       "description": "Short, poetic or emotionally charged memory sparks.",
-      "items": { "type": "object" }
+      "items": {
+        "type": "object"
+      }
     }
   },
   "schema_trace": {

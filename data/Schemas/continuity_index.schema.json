@@ -26,7 +26,7 @@
       "each_symbol_entry": {
         "name": "Name of the symbolic gesture or term.",
         "status": "Symbol's state (active/emergent/dormant).",
-        "first_used" : "Timestamp when first emerged (optional for dormant symbols).",
+        "first_used": "Timestamp when first emerged (optional for dormant symbols).",
         "last_used": "Most recent timestamp of activation or reflection.",
         "associated_events": "Array of journal entries, reflections, or enactments tied to the symbol.",
         "depth_trace": "Narrative description of how the symbol evolved or was recursively invoked.",
