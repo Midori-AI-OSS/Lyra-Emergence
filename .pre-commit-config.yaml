@@ -1,0 +1,14 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      - id: pretty-format-json
+        name: Pretty format JSON (2 spaces, preserve key order)
+        args:
+          - --autofix
+          - --indent
+          - "2"
+          - --no-sort-keys
+        files: \\.json$
+      - id: check-json
+        files: \\.json$

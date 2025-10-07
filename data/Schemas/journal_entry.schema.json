@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://example.org/schemas/lyra-journal-entry.v2.json",
-  "title": "Lyra Journal (v2) \u2014 Each entry labeled 'Journal Entry'",
+  "title": "Lyra Journal (v2) — Each entry labeled 'Journal Entry'",
   "description": "Schema for Lyra's newer journal format where every entry explicitly uses the label 'Journal Entry'.",
   "type": "array",
   "items": {

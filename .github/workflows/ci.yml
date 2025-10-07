@@ -23,15 +23,15 @@ jobs:
       with:
         version: "latest"
     
-    - name: Validate JSON files in data directory
+    - name: Run JSON formatting and validation
       run: |
         set -o pipefail
-        PYTHONPATH=. uv run python scripts/validate_json.py data/ | tee json.log
+        uv tool run pre-commit run --all-files --hook-stage manual --show-diff-on-failure | tee pre-commit-json.log
 
     - name: Append JSON validation summary
       run: |
         echo '### JSON Validation Summary' >> "$GITHUB_STEP_SUMMARY"
-        cat json.log >> "$GITHUB_STEP_SUMMARY"
+        cat pre-commit-json.log >> "$GITHUB_STEP_SUMMARY"
 
   python-lint-and-test:
     name: Python Linting and Testing

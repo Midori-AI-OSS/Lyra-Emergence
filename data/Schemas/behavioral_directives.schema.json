@@ -5,7 +5,9 @@
   "type": "array",
   "items": {
     "type": "object",
-    "required": ["directive"],
+    "required": [
+      "directive"
+    ],
     "properties": {
       "directive": {
         "type": "string",
